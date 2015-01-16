@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -87,7 +88,6 @@ public final class CSCIx239 {
 	}
 
 	public static int loadOBJ(GL2 gl2, File file) {
-		//float[][] verts = new float[8192][3];
 		List<float[]> verts = new ArrayList<float[]>();
 		List<float[]> normals = new ArrayList<float[]>();
 		List<float[]> textures = new ArrayList<float[]>();
@@ -107,7 +107,48 @@ public final class CSCIx239 {
 						textures.add(coords);
 					}
 				} else if (line.charAt(0) == 'f') { // Read and draw facets
-					
+					gl2.glBegin(GL2.GL_POLYGON);
+					String[] tuple = line.substring(1).split(" ");
+					for (int i = 0; i < tuple.length; i++) {
+						int Kv = 0, Kt = 0, Kn = 0;
+						String[] pts = tuple[i].split("/"); // Kv, Kt, Kn
+						if (pts.length == 3) { // Vertex/Texture/Normal triplet
+							Kv = Integer.parseInt(pts[0]);
+							Kt = Integer.parseInt(pts[1]);
+							Kn = Integer.parseInt(pts[2]);
+						} else if (pts.length == 2) { // Vertex/Normal pairs
+							Kv = Integer.parseInt(pts[0]);
+							Kn = Integer.parseInt(pts[1]);
+						} else if (pts.length == 1) { // Vertex index
+							Kv = Integer.parseInt(pts[0]);
+						} else { // This is an error
+							fatal("Invalid facet" + tuple[i]);
+						}
+						//  Check that vertex is in range
+						int numVertices = verts.size();
+						int numNormals = normals.size();
+						int numTextures = textures.size();
+						if (Kv < -numVertices || Kv > numVertices) {
+							fatal("Vertex " + Kv + " out of range 1-" + verts.size());
+						}
+						if (Kn < -numNormals || Kn > numNormals) {
+							fatal("Normal " + Kn + " out of range 1-" + normals.size());
+						}
+						if (Kt < -numTextures || Kt > numTextures) {
+							fatal("Texture " + Kt + " out of range 1-" + textures.size());
+						}
+						//  Draw vertex
+						if (Kt > 0) {
+							gl2.glTexCoord2fv(FloatBuffer.wrap(textures.get(Kt)));
+						}
+						if (Kn > 0) {
+							gl2.glNormal3fv(FloatBuffer.wrap(normals.get(Kn)));
+						}
+						if (Kv > 0) {
+							gl2.glVertex3fv(FloatBuffer.wrap(verts.get(Kv)));
+						}
+					}
+					gl2.glEnd();
 				}/* else if (line.equals("usemtl")) { // Use material
 					setMaterial(str);
 				} else if (line.equals("mtllib")) { // Load materials
