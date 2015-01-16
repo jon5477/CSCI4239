@@ -8,12 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.media.opengl.GL2;
-import javax.media.opengl.GL2ES2;
 
 public final class CSCIx239 {
 	private static final void printShaderLog(GL2 gl2, int obj, File file) {
 		IntBuffer len_b = IntBuffer.allocate(1);
-		gl2.glGetShaderiv(obj, GL2ES2.GL_INFO_LOG_LENGTH, len_b);
+		gl2.glGetShaderiv(obj, GL2.GL_INFO_LOG_LENGTH, len_b);
 		int len = len_b.get();
 		if (len > 1) {
 			IntBuffer n = IntBuffer.allocate(1);
@@ -21,7 +20,7 @@ public final class CSCIx239 {
 			gl2.glGetShaderInfoLog(obj, len, n, buffer);
 			System.err.println(file.getName() + ":\n" + new String(buffer.array()));
 		}
-		gl2.glGetShaderiv(obj, GL2ES2.GL_COMPILE_STATUS, len_b);
+		gl2.glGetShaderiv(obj, GL2.GL_COMPILE_STATUS, len_b);
 		if (len_b.get() == 0) {
 			throw new RuntimeException("Error compiling " + file.getName());
 		}
@@ -29,7 +28,7 @@ public final class CSCIx239 {
 
 	private static final void printProgramLog(GL2 gl2, int obj) {
 		IntBuffer len_b = IntBuffer.allocate(1);
-		gl2.glGetShaderiv(obj, GL2ES2.GL_INFO_LOG_LENGTH, len_b);
+		gl2.glGetShaderiv(obj, GL2.GL_INFO_LOG_LENGTH, len_b);
 		int len = len_b.get();
 		if (len > 1) {
 			IntBuffer n = IntBuffer.allocate(1);
@@ -37,7 +36,7 @@ public final class CSCIx239 {
 			gl2.glGetProgramInfoLog(obj, len, n, buffer);
 			System.err.println(new String(buffer.array()));
 		}
-		gl2.glGetProgramiv(obj, GL2ES2.GL_LINK_STATUS, len_b);
+		gl2.glGetProgramiv(obj, GL2.GL_LINK_STATUS, len_b);
 		if (len_b.get() == 0) {
 			throw new RuntimeException("Error linking program");
 		}
@@ -70,11 +69,11 @@ public final class CSCIx239 {
 		int prog = gl2.glCreateProgram();
 		File vertFile = new File(vertStr);
 		if (vertFile.exists()) {
-			createShader(gl2, prog, GL2ES2.GL_VERTEX_SHADER, vertFile);
+			createShader(gl2, prog, GL2.GL_VERTEX_SHADER, vertFile);
 		}
 		File fragFile = new File(fragStr);
 		if (fragFile.exists()) {
-			createShader(gl2, prog, GL2ES2.GL_FRAGMENT_SHADER, fragFile);
+			createShader(gl2, prog, GL2.GL_FRAGMENT_SHADER, fragFile);
 		}
 		gl2.glLinkProgram(prog);
 		printProgramLog(gl2, prog);
