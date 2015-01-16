@@ -81,10 +81,12 @@ public final class CSCIx239 {
 	 * @param numRead The number of coordinates to read.
 	 * @return
 	 */
-	private static float[] readCoord(String line, int numRead) {
+	private static float[] readFloat(String line, int numRead) {
 		float[] ret = new float[numRead];
 		String[] coords = line.split(" "); // split by white space
 		if (coords.length != ret.length) {
+			System.out.println(line);
+			System.out.println("Num Read: " + numRead);
 			throw new AssertionError("Number to read does not match coordinates on line.");
 		}
 		for (int i = 0; i < numRead; i++) {
@@ -97,13 +99,35 @@ public final class CSCIx239 {
 		try (FileReader fr = new FileReader(file);
 			BufferedReader br = new BufferedReader(fr);) {
 			String line = null;
+			Material mat = null;
 			while ((line = br.readLine()) != null) {
 				if (line.startsWith("newmtl")) {
+					if (mat != null) {
+						materials.put(mat.name, mat);
+						mat = null;
+					}
 					String name = line.substring(7);
-					Material mtl = new Material();
-					mtl.name = name;
+					mat = new Material();
+					mat.name = name;
+				} else if (mat == null) {
+					// If no material short circuit here
+					continue;
+				} else if (line.charAt(0) == 'K') {
+					if (line.charAt(1) == 'e') {
+						mat.Ke = readFloat(line.substring(2), 3);
+					} else if (line.charAt(1) == 'a') {
+						mat.Ka = readFloat(line.substring(2), 3);
+					} else if (line.charAt(1) == 'd') {
+						mat.Kd = readFloat(line.substring(2), 3);
+					} else if (line.charAt(1) == 's') {
+						mat.Ks = readFloat(line.substring(2), 3);
+					}
+				} else if (line.charAt(0) == 'N' && line.charAt(1) == 's') {
+					mat.Ns = readFloat(line.substring(2), 1);
+				} else if (line.startsWith("map_Kd")) {
+					mat.map = loadTexBMP(new File(line.substring(7)));
 				}
-				// TODO initialize more variables here
+				// Ignore line if we get here
 			}
 		} catch (FileNotFoundException e) {
 			System.err.println("Cannot open material file " + file.getName());
@@ -141,25 +165,34 @@ public final class CSCIx239 {
 		List<float[]> textures = new ArrayList<float[]>();
 		try (FileReader fr = new FileReader(file);
 			BufferedReader br = new BufferedReader(fr);) {
+			// Start new displaylist
+			int list = gl2.glGenLists(1);
+			gl2.glNewList(list, GL2.GL_COMPILE);
+			// Push attributes for textures
+			gl2.glPushAttrib(GL2.GL_TEXTURE_BIT);
+			CSCIx239.errCheck(gl2, "loadOBJ");
 			String line = null;
 			while ((line = br.readLine()) != null) {
+				if (line.length() == 0) {
+					continue;
+				}
 				if (line.charAt(0) == 'v') {
 					if (line.charAt(1) == ' ') { // Vertex coordinates (always 3)
-						float[] coords = readCoord(line.substring(2), 3);
+						float[] coords = readFloat(line.substring(2), 3);
 						verts.add(coords);
 					} else if (line.charAt(1) == 'n') { // Normal coordinates (always 3)
-						float[] coords = readCoord(line.substring(2), 3);
+						float[] coords = readFloat(line.substring(3), 3);
 						normals.add(coords);
 					} else if (line.charAt(1) == 't') { // Texture coordinates (always 2)
-						float[] coords = readCoord(line.substring(2), 2);
+						float[] coords = readFloat(line.substring(2), 2);
 						textures.add(coords);
 					}
 				} else if (line.charAt(0) == 'f') { // Read and draw facets
 					gl2.glBegin(GL2.GL_POLYGON);
-					String[] tuple = line.substring(1).split(" ");
+					String[] tuple = line.substring(2).split(" ");
 					for (int i = 0; i < tuple.length; i++) {
 						int Kv = 0, Kt = 0, Kn = 0;
-						String[] pts = tuple[i].split("/"); // Kv, Kt, Kn
+						String[] pts = tuple[i].split("/{1,2}"); // Kv, Kt, Kn
 						if (pts.length == 3) { // Vertex/Texture/Normal triplet
 							Kv = Integer.parseInt(pts[0]);
 							Kt = Integer.parseInt(pts[1]);
@@ -203,19 +236,21 @@ public final class CSCIx239 {
 					loadMaterial(new File(line.substring(7)));
 				}
 			}
+			return list;
 		} catch (FileNotFoundException e) {
 			fatal(file.getName() + " could not be found.");
 			return 0;
 		} catch (IOException e) {
 			throw new RuntimeException(e.getLocalizedMessage(), e);
+		} finally {
+			// Pop attributes (textures)
+			gl2.glPopAttrib();
+			gl2.glEndList();
+			// Free arrays
+			verts.clear();
+			normals.clear();
+			textures.clear();
 		}
-		// TODO STUB
-		
-		// Free arrays
-		verts.clear();
-		normals.clear();
-		textures.clear();
-		return 0;
 	}
 
 	private static void printShaderLog(GL2 gl2, int obj, File file) {

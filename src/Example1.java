@@ -3,6 +3,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 
 import javax.media.opengl.GL2;
 import javax.media.opengl.GLAutoDrawable;
@@ -213,10 +214,12 @@ public final class Example1 {
 			public void init(GLAutoDrawable glautodrawable) {
 				start = System.currentTimeMillis();
 				gl = glautodrawable.getGL().getGL2();
+				model = CSCIx239.loadOBJ(gl, new File("tyra.obj"));
 			}
 			
 			@Override
 			public void dispose(GLAutoDrawable glautodrawable) {
+				gl = null;
 			}
 			
 			@Override
