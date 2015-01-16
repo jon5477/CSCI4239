@@ -103,6 +103,7 @@ public final class CSCIx239 {
 					Material mtl = new Material();
 					mtl.name = name;
 				}
+				// TODO initialize more variables here
 			}
 		} catch (FileNotFoundException e) {
 			System.err.println("Cannot open material file " + file.getName());
@@ -113,26 +114,25 @@ public final class CSCIx239 {
 
 	private static void setMaterial(GL2 gl2, String name) {
 		// Search materials for a matching name
-		for (int k = 0; k < Nmtl; k++) {
-			if (mtl[k].name.equals(name)) {
-				// Set material colors
-				gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_EMISSION, mtl[k].Ke);
-				gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_AMBIENT, mtl[k].Ka);
-				gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_DIFFUSE, mtl[k].Kd);
-				gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_SPECULAR, mtl[k].Ks);
-				gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_SHININESS, &mtl[k].Ns);
-				// Bind texture if specified
-				if (mtl[k].map) {
-					gl2.glEnable(GL2.GL_TEXTURE_2D);
-					gl2.glBindTexture(GL2.GL_TEXTURE_2D, mtl[k].map);
-				} else {
-					gl2.glDisable(GL2.GL_TEXTURE_2D);
-				}
-				return;
+		Material mat = materials.get(name);
+		if (mat != null) {
+			// Set material colors
+			gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_EMISSION, FloatBuffer.wrap(mat.Ke));
+			gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_AMBIENT, FloatBuffer.wrap(mat.Ka));
+			gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_DIFFUSE, FloatBuffer.wrap(mat.Kd));
+			gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_SPECULAR, FloatBuffer.wrap(mat.Ks));
+			gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_SHININESS, FloatBuffer.wrap(mat.Ns));
+			// Bind texture if specified
+			if (mat.map > 0) {
+				gl2.glEnable(GL2.GL_TEXTURE_2D);
+				gl2.glBindTexture(GL2.GL_TEXTURE_2D, mat.map);
+			} else {
+				gl2.glDisable(GL2.GL_TEXTURE_2D);
 			}
+		} else {
+			//  No matches
+			System.err.println("Unknown material " + name);
 		}
-		//  No matches
-		System.err.println("Unknown material " + name);
 	}
 
 	public static int loadOBJ(GL2 gl2, File file) {
@@ -199,9 +199,9 @@ public final class CSCIx239 {
 					gl2.glEnd();
 				} else if (line.startsWith("usemtl")) { // Use material
 					setMaterial(gl2, line.substring(7));
-				}/* else if (line.equals("mtllib")) { // Load materials
-					loadMaterial(str);
-				}*/
+				} else if (line.equals("mtllib")) { // Load materials
+					loadMaterial(new File(line.substring(7)));
+				}
 			}
 		} catch (FileNotFoundException e) {
 			fatal(file.getName() + " could not be found.");
