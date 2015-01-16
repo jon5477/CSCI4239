@@ -94,16 +94,33 @@ public final class CSCIx239 {
 	}
 
 	private static void loadMaterial(File file) {
+		int k = -1;
 		try (FileReader fr = new FileReader(file);
 			BufferedReader br = new BufferedReader(fr);) {
 			String line = null;
 			while ((line = br.readLine()) != null) {
+				Material mtl = new Material();
 				if (line.startsWith("newmtl")) {
 					String name = line.substring(7);
 					Material mtl = new Material();
 					mtl.name = name;
+					materials.put(name, mtl);
+				} else if (materials.isEmpty()) { //  If no material short circuit here
+					continue;
+				} else if (line.charAt(0) =='K' && line.charAt(1) =='e') { // Emission color
+					readfloat(line+2,3,mtl[k].Ke);
+				} else if (line.charAt(0) =='K' && line.charAt(1) =='a') { // Ambient color
+					readfloat(line+2,3,mtl[k].Ka);
+				} else if (line.charAt(0) =='K' && line.charAt(1) == 'd') { // Diffuse color
+					readfloat(line+2,3,mtl[k].Kd);
+				} else if (line.charAt(0) =='K' && line.charAt(1) == 's') { // Specular color
+					readfloat(line+2,3,mtl[k].Ks);
+				} else if (line.charAt(0) =='N' && line.charAt(1) == 's') { // Material Shininess
+					readfloat(line+2,1,&mtl[k].Ns);
+				} else if ((str = readstr(line,"map_Kd"))) { // Textures (must be BMP - will fail if not)
+					mtl[k].map = LoadTexBMP(str);
 				}
-				// TODO initialize more variables here
+				// Ignore line if we get here
 			}
 		} catch (FileNotFoundException e) {
 			System.err.println("Cannot open material file " + file.getName());
