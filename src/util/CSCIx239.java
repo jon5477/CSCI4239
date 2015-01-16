@@ -1,3 +1,5 @@
+package util;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -7,7 +9,9 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.media.opengl.GL2;
 import javax.media.opengl.glu.GLU;
@@ -15,6 +19,8 @@ import javax.media.opengl.glu.GLU;
 import com.jogamp.opengl.util.gl2.GLUT;
 
 public final class CSCIx239 {
+	private static final Map<String, Material> materials = new HashMap<String, Material>();
+
 	private CSCIx239() {
 	}
 
@@ -87,6 +93,48 @@ public final class CSCIx239 {
 		return ret;
 	}
 
+	private static void loadMaterial(File file) {
+		try (FileReader fr = new FileReader(file);
+			BufferedReader br = new BufferedReader(fr);) {
+			String line = null;
+			while ((line = br.readLine()) != null) {
+				if (line.startsWith("newmtl")) {
+					String name = line.substring(7);
+					Material mtl = new Material();
+					mtl.name = name;
+				}
+			}
+		} catch (FileNotFoundException e) {
+			System.err.println("Cannot open material file " + file.getName());
+		} catch (IOException e) {
+			throw new RuntimeException(e.getLocalizedMessage(), e);
+		}
+	}
+
+	private static void setMaterial(GL2 gl2, String name) {
+		// Search materials for a matching name
+		for (int k = 0; k < Nmtl; k++) {
+			if (mtl[k].name.equals(name)) {
+				// Set material colors
+				gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_EMISSION, mtl[k].Ke);
+				gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_AMBIENT, mtl[k].Ka);
+				gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_DIFFUSE, mtl[k].Kd);
+				gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_SPECULAR, mtl[k].Ks);
+				gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_SHININESS, &mtl[k].Ns);
+				// Bind texture if specified
+				if (mtl[k].map) {
+					gl2.glEnable(GL2.GL_TEXTURE_2D);
+					gl2.glBindTexture(GL2.GL_TEXTURE_2D, mtl[k].map);
+				} else {
+					gl2.glDisable(GL2.GL_TEXTURE_2D);
+				}
+				return;
+			}
+		}
+		//  No matches
+		System.err.println("Unknown material " + name);
+	}
+
 	public static int loadOBJ(GL2 gl2, File file) {
 		List<float[]> verts = new ArrayList<float[]>();
 		List<float[]> normals = new ArrayList<float[]>();
@@ -139,19 +187,19 @@ public final class CSCIx239 {
 						}
 						//  Draw vertex
 						if (Kt > 0) {
-							gl2.glTexCoord2fv(FloatBuffer.wrap(textures.get(Kt)));
+							gl2.glTexCoord2fv(FloatBuffer.wrap(textures.get(Kt - 1)));
 						}
 						if (Kn > 0) {
-							gl2.glNormal3fv(FloatBuffer.wrap(normals.get(Kn)));
+							gl2.glNormal3fv(FloatBuffer.wrap(normals.get(Kn - 1)));
 						}
 						if (Kv > 0) {
-							gl2.glVertex3fv(FloatBuffer.wrap(verts.get(Kv)));
+							gl2.glVertex3fv(FloatBuffer.wrap(verts.get(Kv - 1)));
 						}
 					}
 					gl2.glEnd();
-				}/* else if (line.equals("usemtl")) { // Use material
-					setMaterial(str);
-				} else if (line.equals("mtllib")) { // Load materials
+				} else if (line.startsWith("usemtl")) { // Use material
+					setMaterial(gl2, line.substring(7));
+				}/* else if (line.equals("mtllib")) { // Load materials
 					loadMaterial(str);
 				}*/
 			}
