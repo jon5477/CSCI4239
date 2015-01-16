@@ -33,14 +33,6 @@ public final class Example1 {
 	private static final GLUT glt = new GLUT();
 	private static GL2 gl;
 
-	private static double Sin(double th) {
-		return Math.sin(Math.PI / (180 * th));
-	}
-
-	private static double Cos(double th) {
-		return Math.cos(Math.PI / (180 * th));
-	}
-
 	private static void cube(GL2 gl2) {
 		//  Front
 		gl2.glColor3f(1,0,0);
@@ -127,25 +119,7 @@ public final class Example1 {
 		asp = (height>0) ? (double)width/height : 1;
 		//  Set the viewport to the entire window
 		gl2.glViewport(0,0, width,height);
-		project(gl2, perspProj ? fov : 0.0, asp, dim);
-	}
-
-	private static void project(GL2 gl2, double fov, double asp,double dim) {
-		//  Tell OpenGL we want to manipulate the projection matrix
-		gl2.glMatrixMode(GL2.GL_PROJECTION);
-		//  Undo previous transformations
-		gl2.glLoadIdentity();
-		//  Perspective transformation
-		if (fov > 0.0) {
-			GLU glu = GLU.createGLU(gl2);
-			glu.gluPerspective(fov,asp,dim/16,16*dim);
-		} else { //  Orthogonal transformation
-			gl2.glOrtho(-asp*dim,asp*dim,-dim,+dim,-dim,+dim);
-		}
-		//  Switch to manipulating the model matrix
-		gl2.glMatrixMode(GL2.GL_MODELVIEW);
-		//  Undo previous transformations
-		gl2.glLoadIdentity();
+		CSCIx239.project(gl2, perspProj ? fov : 0.0, asp, dim);
 	}
 
 	/**
@@ -164,14 +138,14 @@ public final class Example1 {
 		gl2.glLoadIdentity();
 		// Perspective - set eye position
 		if (perspProj) {
-			double Ex = -2*dim*Sin(th)*Cos(ph);
-			double Ey = +2*dim*Sin(ph);
-			double Ez = +2*dim*Cos(th)*Cos(ph);
+			double Ex = -2 * dim * CSCIx239.Sin(th) * CSCIx239.Cos(ph);
+			double Ey = +2 * dim * CSCIx239.Sin(ph);
+			double Ez = +2 * dim * CSCIx239.Cos(th) * CSCIx239.Cos(ph);
 			GLU glu = GLU.createGLU(gl2);
-			glu.gluLookAt(Ex, Ey, Ez, 0.0, 0.0, 0.0, 0.0, Cos(ph), 0.0);
+			glu.gluLookAt(Ex, Ey, Ez, 0, 0, 0, 0, CSCIx239.Cos(ph), 0);
 		} else { // Orthogonal - set world orientation
-			gl2.glRotatef(ph,1,0,0);
-			gl2.glRotatef(th,0,1,0);
+			gl2.glRotatef(ph, 1, 0, 0);
+			gl2.glRotatef(th, 0, 1, 0);
 		}
 		//  Select shader (0 => no shader)
 		gl2.glUseProgram(shader[mode]);
@@ -208,33 +182,18 @@ public final class Example1 {
 			gl2.glEnd();
 			//  Label axes
 			gl2.glRasterPos3d(len,0.0,0.0);
-			Print("X");
+			CSCIx239.print(glt, "X");
 			gl2.glRasterPos3d(0.0,len,0.0);
-			Print("Y");
+			CSCIx239.print(glt, "Y");
 			gl2.glRasterPos3d(0.0,0.0,len);
-			Print("Z");
+			CSCIx239.print(glt, "Z");
 		}
 		//  Display parameters
 		gl2.glWindowPos2i(5,5);
-		Print("Angle=" + th + "," + ph + "  Dim=" + dim + " Projection=" + (perspProj ? "Perpective" : "Orthogonal") + " " + text[mode]);
+		CSCIx239.print(glt, "Angle=" + th + "," + ph + "  Dim=" + dim + " Projection=" + (perspProj ? "Perpective" : "Orthogonal") + " " + text[mode]);
 		//  Render the scene and make it visible
-		errCheck(gl2, "display");
+		CSCIx239.errCheck(gl2, "display");
 		gl2.glFlush();
-	}
-
-	private static void Print(String s) {
-		for (int i = 0, n = s.length(); i < n; i++) {
-			glt.glutBitmapCharacter(GLUT.BITMAP_HELVETICA_18, s.charAt(i));
-		}
-	}
-
-	private static void errCheck(GL2 gl2, String s) {
-		int err = gl2.glGetError();
-		if (err > 0) {
-			GLU glu = GLU.createGLU(gl2);
-			String errstr = glu.gluErrorString(err);
-			System.err.println("ERROR: " + errstr + " [" + s + "]");
-		}
 	}
 
 	public static void main(String[] args) {
@@ -314,7 +273,7 @@ public final class Example1 {
 					}
 				}
 				//  Reproject
-				project(gl, perspProj ? fov:0,asp,dim);
+				CSCIx239.project(gl, perspProj ? fov:0,asp,dim);
 				//  Tell GLUT it is necessary to redisplay the scene
 				glcanvas.repaint();
 			}
