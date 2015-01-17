@@ -10,6 +10,7 @@ import java.text.DecimalFormat;
 import javax.media.opengl.GL2;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCapabilities;
+import javax.media.opengl.GLContext;
 import javax.media.opengl.GLEventListener;
 import javax.media.opengl.GLProfile;
 import javax.media.opengl.awt.GLCanvas;
@@ -38,8 +39,9 @@ public final class Example1 {
 	private static final DecimalFormat df = new DecimalFormat("##.0");
 	private static final GLUT glt = new GLUT();
 	private static Animator ani;
-	private static GLU glu;
+	private static GLContext glc;
 	private static GL2 gl;
+	private static GLU glu;
 
 	static {
 		df.setRoundingMode(RoundingMode.HALF_UP);
@@ -206,7 +208,7 @@ public final class Example1 {
 		CSCIx239.print(glt, df.format(ani.getLastFPS()) + " FPS");
 		//  Display parameters
 		gl2.glWindowPos2i(5,5);
-		CSCIx239.print(glt, "Angle=" + th + "," + ph + "  Dim=" + dim + " Projection=" + (perspProj ? "Perpective" : "Orthogonal") + " " + text[mode]);
+		CSCIx239.print(glt, "Angle=" + th + "," + ph + "  Dim=" + df.format(dim) + " Projection=" + (perspProj ? "Perpective" : "Orthogonal") + " " + text[mode]);
 		//  Render the scene and make it visible
 		CSCIx239.errCheck(gl2, "display");
 		gl2.glFlush();
@@ -228,6 +230,7 @@ public final class Example1 {
 				start = System.currentTimeMillis();
 				gl = glautodrawable.getGL().getGL2();
 				glu = GLU.createGLU(gl);
+				glc = GLContext.getCurrent();
 				// Load object
 				model[0] = CSCIx239.loadOBJ(gl, new File("tyra.obj"));
 				// Load another object
@@ -299,7 +302,9 @@ public final class Example1 {
 					}
 				}
 				//  Reproject
-				//CSCIx239.project(gl, glu, perspProj ? fov : 0, asp, dim);
+				glc.makeCurrent();
+				CSCIx239.project(gl, glu, perspProj ? fov : 0, asp, dim);
+				//glc.release();
 				//  Tell GLUT it is necessary to redisplay the scene
 				glcanvas.repaint();
 			}
