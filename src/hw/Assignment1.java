@@ -1,6 +1,6 @@
+package hw;
+
 import java.awt.Frame;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
@@ -24,7 +24,7 @@ import util.CSCIx239;
 import com.jogamp.opengl.util.Animator;
 import com.jogamp.opengl.util.gl2.GLUT;
 
-public final class Example1 {
+public final class Assignment1 {
 	private static long start;
 	private static boolean axes = true; // Display axes
 	private static int mode = 0; // Shader mode
@@ -37,7 +37,7 @@ public final class Example1 {
 	private static double dim = 3.0; // Size of world
 	private static int model = 0; // Model display list
 	private static int shader[] = {0,0}; // Shader program
-	private static String text[] = {"No Shader", "Basic Shader"};
+	private static String text[] = {"No Shader", "NDC2RGB Shader"};
 
 	private static final DecimalFormat df = new DecimalFormat("##.0");
 	private static final GLUT glt = new GLUT();
@@ -221,7 +221,7 @@ public final class Example1 {
 		glcanvas.addGLEventListener(new GLEventListener() {
 			@Override
 			public void reshape(GLAutoDrawable glautodrawable, int x, int y, int width, int height) {
-				Example1.reshape(glautodrawable.getGL().getGL2(), width, height);
+				Assignment1.reshape(glautodrawable.getGL().getGL2(), width, height);
 			}
 			
 			@Override
@@ -232,7 +232,7 @@ public final class Example1 {
 				// Load object
 				model = CSCIx239.loadOBJ(gl, new File("tyra.obj"));
 				// Create Shader Programs
-				shader[1] = CSCIx239.createShaderProg(gl, "basic.vert", "basic.frag");
+				shader[1] = CSCIx239.createShaderProg(gl, "ndc2rgb.vert", "ndc2rgb.frag");
 			}
 			
 			@Override
@@ -243,7 +243,7 @@ public final class Example1 {
 			@Override
 			public void display(GLAutoDrawable glautodrawable) {
 				// Called when rendering is necessary
-				Example1.display(glautodrawable.getGL().getGL2(), glautodrawable.getAnimator(), glautodrawable.getSurfaceWidth(), glautodrawable.getSurfaceHeight());
+				Assignment1.display(glautodrawable.getGL().getGL2(), glautodrawable.getAnimator(), glautodrawable.getSurfaceWidth(), glautodrawable.getSurfaceHeight());
 			}
 		});
 		KeyListener kl = new KeyListener() {
@@ -317,7 +317,7 @@ public final class Example1 {
 		glcanvas.addKeyListener(kl);
 		final Animator animator = new Animator(glcanvas);
 		animator.setUpdateFPSFrames(3, null);
-		final Frame frame = new Frame("Basic Shader");
+		final Frame frame = new Frame("NDC to RGB Shader - Jonathan Huang");
 		frame.add(glcanvas);
 		frame.addWindowListener(new WindowAdapter() {
 			@Override
@@ -327,24 +327,8 @@ public final class Example1 {
 				System.exit(0);
 			}
 		});
-		frame.addFocusListener(new FocusListener() {
-			@Override
-			public void focusGained(FocusEvent e) {
-				if (animator.isPaused()) {
-					animator.resume();
-				}
-			}
-			
-			@Override
-			public void focusLost(FocusEvent e) {
-				if (animator.isAnimating()) {
-					animator.pause();
-				}
-			}
-		});
 		frame.setSize(600, 600);
 		frame.setVisible(true);
 		animator.start();
-		glcanvas.requestFocus();
 	}
 }
