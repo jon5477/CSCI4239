@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.media.opengl.GL2;
+import javax.media.opengl.GLContext;
 import javax.media.opengl.glu.GLU;
 
 import com.jogamp.opengl.util.gl2.GLUT;
@@ -59,17 +60,16 @@ public final class CSCIx239 {
 		return 0;
 	}
 
-	public static void project(GL2 gl2, double fov, double asp,double dim) {
+	public static void project(GL2 gl2, GLU glu, double fov, double asp,double dim) {
 		// Tell OpenGL we want to manipulate the projection matrix
 		gl2.glMatrixMode(GL2.GL_PROJECTION);
 		// Undo previous transformations
 		gl2.glLoadIdentity();
 		// Perspective transformation
 		if (fov > 0.0) {
-			GLU glu = GLU.createGLU(gl2);
 			glu.gluPerspective(fov,asp,dim/16,16*dim);
 		} else { // Orthogonal transformation
-			gl2.glOrtho(-asp*dim,asp*dim,-dim,+dim,-dim,+dim);
+			gl2.glOrtho(-asp * dim, asp * dim, -dim, +dim, -dim, +dim);
 		}
 		// Switch to manipulating the model matrix
 		gl2.glMatrixMode(GL2.GL_MODELVIEW);
@@ -180,13 +180,13 @@ public final class CSCIx239 {
 				}
 				if (line.charAt(0) == 'v') {
 					if (line.charAt(1) == ' ') { // Vertex coordinates (always 3)
-						float[] coords = readFloat(line.substring(2), 3);
+						float[] coords = readFloat(line.substring(3), 3);
 						verts.add(coords);
 					} else if (line.charAt(1) == 'n') { // Normal coordinates (always 3)
 						float[] coords = readFloat(line.substring(3), 3);
 						normals.add(coords);
 					} else if (line.charAt(1) == 't') { // Texture coordinates (always 2)
-						float[] coords = readFloat(line.substring(2), 2);
+						float[] coords = readFloat(line.substring(3), 2);
 						textures.add(coords);
 					}
 				} else if (line.charAt(0) == 'f') { // Read and draw facets

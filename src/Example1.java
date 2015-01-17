@@ -8,6 +8,7 @@ import java.io.File;
 import javax.media.opengl.GL2;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCapabilities;
+import javax.media.opengl.GLContext;
 import javax.media.opengl.GLEventListener;
 import javax.media.opengl.GLProfile;
 import javax.media.opengl.awt.GLCanvas;
@@ -15,25 +16,26 @@ import javax.media.opengl.glu.GLU;
 
 import util.CSCIx239;
 
+import com.jogamp.opengl.util.Animator;
 import com.jogamp.opengl.util.gl2.GLUT;
 
 public final class Example1 {
 	private static long start;
 	private static boolean axes = true;       //  Display axes
 	private static int mode=0;       //  Shader mode
-	private static int move=1;       //  Move light
 	private static boolean perspProj=false;       //  Projection type
 	private static int obj=0;        //  Object
 	private static int th=0;         //  Azimuth of view angle
 	private static int ph=0;         //  Elevation of view angle
 	private static int fov=55;       //  Field of view (for perspective)
-	private static double asp=1;     //  Aspect ratio
-	private static double dim=3.0;   //  Size of world
-	private static int model;        //  Model display list
+	private static double asp = 1;     //  Aspect ratio
+	private static double dim = 3.0;   //  Size of world
+	private static int model[] = new int[2];        //  Model display list
 	private static int shader[] = {0,0}; //  Shader program
 	private static String text[] = {"No Shader", "Basic Shader"};
 
 	private static final GLUT glt = new GLUT();
+	private static GLU glu;
 	private static GL2 gl;
 
 	private static void cube(GL2 gl2) {
@@ -122,7 +124,7 @@ public final class Example1 {
 		asp = (height>0) ? (double)width/height : 1;
 		//  Set the viewport to the entire window
 		gl2.glViewport(0,0, width,height);
-		CSCIx239.project(gl2, perspProj ? fov : 0.0, asp, dim);
+		CSCIx239.project(gl2, GLU.createGLU(gl2), perspProj ? fov : 0.0, asp, dim);
 	}
 
 	/**
@@ -163,8 +165,10 @@ public final class Example1 {
 		}
 		//  Draw the model, teapot or cube
 		gl2.glColor3f(1,1,0);
+		//if (obj == 3) {
+		//	gl2.glCallList(model[1]);
 		if (obj == 2) {
-			gl2.glCallList(model);
+			gl2.glCallList(model[0]);
 		} else if (obj == 1) {
 			glt.glutSolidTeapot(1.0);
 		} else {
@@ -212,10 +216,14 @@ public final class Example1 {
 			
 			@Override
 			public void init(GLAutoDrawable glautodrawable) {
+				System.out.println(Thread.currentThread().getName());
 				start = System.currentTimeMillis();
 				gl = glautodrawable.getGL().getGL2();
+				glu = GLU.createGLU(gl);
 				// Load object
-				model = CSCIx239.loadOBJ(gl, new File("tyra.obj"));
+				model[0] = CSCIx239.loadOBJ(gl, new File("tyra.obj"));
+				// Load another object
+				//model[1] = CSCIx239.loadOBJ(gl, new File("amemasu.obj"));
 				// Create Shader Programs
 				shader[1] = CSCIx239.createShaderProg(gl, "basic.vert", "basic.frag");
 				CSCIx239.errCheck(gl, "init");
@@ -232,7 +240,7 @@ public final class Example1 {
 				Example1.display(glautodrawable.getGL().getGL2(), glautodrawable.getSurfaceWidth(), glautodrawable.getSurfaceHeight());
 			}
 		});
-		glcanvas.addKeyListener(new KeyListener() {
+		KeyListener kl = new KeyListener() {
 			@Override
 			public void keyPressed(KeyEvent key) {
 				switch (key.getKeyChar()) {
@@ -253,7 +261,7 @@ public final class Example1 {
 					//  Toggle objects
 					case 'o':
 					case 'O':
-						obj = (obj+1)%3;
+						obj = (obj + 1) % 3;
 						break;
 					//  Cycle modes
 					case 'm':
@@ -282,7 +290,7 @@ public final class Example1 {
 					}
 				}
 				//  Reproject
-				CSCIx239.project(gl, perspProj ? fov:0,asp,dim);
+				//CSCIx239.project(gl, glu, perspProj ? fov : 0, asp, dim);
 				//  Tell GLUT it is necessary to redisplay the scene
 				glcanvas.repaint();
 			}
@@ -296,8 +304,8 @@ public final class Example1 {
 			public void keyTyped(KeyEvent arg0) {
 				// no-op
 			}
-		});
-		Thread animator = new Thread() {
+		};
+		/*Thread animator = new Thread() {
 			@Override
 			public void run() {
 				while (true) {
@@ -309,8 +317,10 @@ public final class Example1 {
 					}
 				}
 			}
-		};
-		animator.setDaemon(true);
+		};*/
+		glcanvas.addKeyListener(kl);
+		Animator animator = new Animator(glcanvas);
+		//animator.setDaemon(true);
 		final Frame frame = new Frame("Basic Shader");
 		frame.add(glcanvas);
 		frame.addWindowListener(new WindowAdapter() {
@@ -323,6 +333,7 @@ public final class Example1 {
 		});
 		frame.setSize(600, 600);
 		frame.setVisible(true);
-		animator.run();
+		frame.addKeyListener(kl);
+		animator.start();
 	}
 }
