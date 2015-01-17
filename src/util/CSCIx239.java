@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.media.opengl.GL2;
-import javax.media.opengl.GLContext;
 import javax.media.opengl.glu.GLU;
 
 import com.jogamp.opengl.util.gl2.GLUT;
@@ -28,11 +27,11 @@ public final class CSCIx239 {
 	}
 
 	public static double Sin(double th) {
-		return Math.sin(Math.PI / (180 * th));
+		return Math.sin(Math.PI / 180 * th);
 	}
 
 	public static double Cos(double th) {
-		return Math.cos(Math.PI / (180 * th));
+		return Math.cos(Math.PI / 180 * th);
 	}
 
 	public static void print(GLUT glt, String s) {
@@ -49,7 +48,7 @@ public final class CSCIx239 {
 	public static void errCheck(GL2 gl2, String s) {
 		int err = gl2.glGetError();
 		if (err > 0) {
-			GLU glu = GLU.createGLU(gl2);
+			GLU glu = new GLU();
 			String errstr = glu.gluErrorString(err);
 			System.err.println("ERROR: " + errstr + " [" + s + "]");
 		}
@@ -60,14 +59,15 @@ public final class CSCIx239 {
 		return 0;
 	}
 
-	public static void project(GL2 gl2, GLU glu, double fov, double asp,double dim) {
+	public static void project(GL2 gl2, double fov, double asp, double dim) {
 		// Tell OpenGL we want to manipulate the projection matrix
 		gl2.glMatrixMode(GL2.GL_PROJECTION);
 		// Undo previous transformations
 		gl2.glLoadIdentity();
 		// Perspective transformation
-		if (fov > 0.0) {
-			glu.gluPerspective(fov,asp,dim/16,16*dim);
+		if (fov != 0.0) {
+			GLU glu = new GLU();
+			glu.gluPerspective(fov, asp, dim / 16.0, 16.0 * dim);
 		} else { // Orthogonal transformation
 			gl2.glOrtho(-asp * dim, asp * dim, -dim, +dim, -dim, +dim);
 		}

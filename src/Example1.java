@@ -1,4 +1,6 @@
 import java.awt.Frame;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
@@ -8,6 +10,7 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 
 import javax.media.opengl.GL2;
+import javax.media.opengl.GLAnimatorControl;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCapabilities;
 import javax.media.opengl.GLContext;
@@ -23,25 +26,23 @@ import com.jogamp.opengl.util.gl2.GLUT;
 
 public final class Example1 {
 	private static long start;
-	private static boolean axes = true;       //  Display axes
-	private static int mode=0;       //  Shader mode
-	private static boolean perspProj=false;       //  Projection type
-	private static int obj=0;        //  Object
-	private static int th=0;         //  Azimuth of view angle
-	private static int ph=0;         //  Elevation of view angle
-	private static int fov=55;       //  Field of view (for perspective)
-	private static double asp = 1;     //  Aspect ratio
-	private static double dim = 3.0;   //  Size of world
-	private static int model[] = new int[2];        //  Model display list
-	private static int shader[] = {0,0}; //  Shader program
+	private static boolean axes = true; // Display axes
+	private static int mode = 0; // Shader mode
+	private static boolean perspProj = true; // Projection type
+	private static int obj = 0; // Object
+	private static int th = 0; // Azimuth of view angle
+	private static int ph = 0; // Elevation of view angle
+	private static int fov = 55; // Field of view (for perspective)
+	private static double asp = 1; // Aspect ratio
+	private static double dim = 3.0; // Size of world
+	private static int model[] = new int[2]; // Model display list
+	private static int shader[] = {0,0}; // Shader program
 	private static String text[] = {"No Shader", "Basic Shader"};
 
 	private static final DecimalFormat df = new DecimalFormat("##.0");
 	private static final GLUT glt = new GLUT();
-	private static Animator ani;
 	private static GLContext glc;
 	private static GL2 gl;
-	private static GLU glu;
 
 	static {
 		df.setRoundingMode(RoundingMode.HALF_UP);
@@ -128,12 +129,12 @@ public final class Example1 {
 		gl2.glEnd();
 	}
 
-	private static void setup(GL2 gl2, int width, int height) {
+	private static void reshape(GL2 gl2, int width, int height) {
 		//  Ratio of the width to the height of the window
-		asp = (height>0) ? (double)width/height : 1;
+		asp = (height > 0) ? (double) width / height : 1;
 		//  Set the viewport to the entire window
-		gl2.glViewport(0,0, width,height);
-		CSCIx239.project(gl2, GLU.createGLU(gl2), perspProj ? fov : 0.0, asp, dim);
+		gl2.glViewport(0, 0, width, height);
+		CSCIx239.project(gl2, perspProj ? fov : 0.0, asp, dim);
 	}
 
 	/**
@@ -142,7 +143,7 @@ public final class Example1 {
 	 * @param width
 	 * @param height
 	 */
-	private static void display(GL2 gl2, int width, int height) {
+	private static void display(GL2 gl2, GLAnimatorControl anim, int width, int height) {
 		double len = 2.0; // Length of axes
 		// Erase the window and the depth buffer
 		gl2.glClear(GL2.GL_COLOR_BUFFER_BIT | GL2.GL_DEPTH_BUFFER_BIT);
@@ -155,24 +156,23 @@ public final class Example1 {
 			double Ex = -2 * dim * CSCIx239.Sin(th) * CSCIx239.Cos(ph);
 			double Ey = +2 * dim * CSCIx239.Sin(ph);
 			double Ez = +2 * dim * CSCIx239.Cos(th) * CSCIx239.Cos(ph);
-			GLU glu = GLU.createGLU(gl2);
+			GLU glu = new GLU();
 			glu.gluLookAt(Ex, Ey, Ez, 0, 0, 0, 0, CSCIx239.Cos(ph), 0);
 		} else { // Orthogonal - set world orientation
 			gl2.glRotatef(ph, 1, 0, 0);
 			gl2.glRotatef(th, 0, 1, 0);
 		}
-		//  Select shader (0 => no shader)
+		// Select shader (0 => no shader)
 		gl2.glUseProgram(shader[mode]);
-		//  Export time to uniform variable
+		// Export time to uniform variable
 		if (mode == 1) {
-			//float time = 0.001 * glu.glutGet(); // GLUT.GLUT_ELAPSED_TIME
 			float time = (float) (0.001 * (System.currentTimeMillis() - start));
 			int id = gl2.glGetUniformLocation(shader[mode], "time");
 			if (id >= 0) {
 				gl2.glUniform1f(id,time);
 			}
 		}
-		//  Draw the model, teapot or cube
+		// Draw the model, teapot or cube
 		gl2.glColor3f(1,1,0);
 		//if (obj == 3) {
 		//	gl2.glCallList(model[1]);
@@ -183,9 +183,9 @@ public final class Example1 {
 		} else {
 			cube(gl2);
 		}
-		//  No shader for what follows
+		// No shader for what follows
 		gl2.glUseProgram(0);
-		//  Draw axes - no lighting from here on
+		// Draw axes - no lighting from here on
 		gl2.glColor3f(1,1,1);
 		if (axes) {
 			gl2.glBegin(GL2.GL_LINES);
@@ -196,7 +196,7 @@ public final class Example1 {
 			gl2.glVertex3d(0.0,0.0,0.0);
 			gl2.glVertex3d(0.0,0.0,len);
 			gl2.glEnd();
-			//  Label axes
+			// Label axes
 			gl2.glRasterPos3d(len,0.0,0.0);
 			CSCIx239.print(glt, "X");
 			gl2.glRasterPos3d(0.0,len,0.0);
@@ -204,32 +204,32 @@ public final class Example1 {
 			gl2.glRasterPos3d(0.0,0.0,len);
 			CSCIx239.print(glt, "Z");
 		}
+		// Display FPS
 		gl2.glWindowPos2i(5, 560);
-		CSCIx239.print(glt, df.format(ani.getLastFPS()) + " FPS");
-		//  Display parameters
+		CSCIx239.print(glt, df.format(anim.getLastFPS()) + " FPS");
+		// Display parameters
 		gl2.glWindowPos2i(5,5);
 		CSCIx239.print(glt, "Angle=" + th + "," + ph + "  Dim=" + df.format(dim) + " Projection=" + (perspProj ? "Perpective" : "Orthogonal") + " " + text[mode]);
-		//  Render the scene and make it visible
+		// Render the scene and make it visible
 		CSCIx239.errCheck(gl2, "display");
 		gl2.glFlush();
 	}
 
 	public static void main(String[] args) {
 		GLProfile glprofile = GLProfile.getDefault();
-		GLCapabilities glcapabilities = new GLCapabilities(glprofile);
-		final GLCanvas glcanvas = new GLCanvas(glcapabilities);
+		GLCapabilities glcap = new GLCapabilities(glprofile);
+		glcap.setDoubleBuffered(true);
+		final GLCanvas glcanvas = new GLCanvas(glcap);
 		glcanvas.addGLEventListener(new GLEventListener() {
 			@Override
 			public void reshape(GLAutoDrawable glautodrawable, int x, int y, int width, int height) {
-				// Called when application first loads or the window is resized
-				Example1.setup(glautodrawable.getGL().getGL2(), width, height);
+				Example1.reshape(glautodrawable.getGL().getGL2(), width, height);
 			}
 			
 			@Override
 			public void init(GLAutoDrawable glautodrawable) {
 				start = System.currentTimeMillis();
 				gl = glautodrawable.getGL().getGL2();
-				glu = GLU.createGLU(gl);
 				glc = GLContext.getCurrent();
 				// Load object
 				model[0] = CSCIx239.loadOBJ(gl, new File("tyra.obj"));
@@ -237,7 +237,6 @@ public final class Example1 {
 				//model[1] = CSCIx239.loadOBJ(gl, new File("amemasu.obj"));
 				// Create Shader Programs
 				shader[1] = CSCIx239.createShaderProg(gl, "basic.vert", "basic.frag");
-				CSCIx239.errCheck(gl, "init");
 			}
 			
 			@Override
@@ -247,9 +246,8 @@ public final class Example1 {
 			
 			@Override
 			public void display(GLAutoDrawable glautodrawable) {
-				//glautodrawable.getAnimator().setUpdateFPSFrames(300, null);
 				// Called when rendering is necessary
-				Example1.display(glautodrawable.getGL().getGL2(), glautodrawable.getSurfaceWidth(), glautodrawable.getSurfaceHeight());
+				Example1.display(glautodrawable.getGL().getGL2(), glautodrawable.getAnimator(), glautodrawable.getSurfaceWidth(), glautodrawable.getSurfaceHeight());
 			}
 		});
 		KeyListener kl = new KeyListener() {
@@ -303,8 +301,9 @@ public final class Example1 {
 				}
 				//  Reproject
 				glc.makeCurrent();
-				CSCIx239.project(gl, glu, perspProj ? fov : 0, asp, dim);
-				//glc.release();
+				CSCIx239.project(gl, perspProj ? fov : 0, asp, dim);
+				CSCIx239.errCheck(gl, "proj");
+				glc.release();
 				//  Tell GLUT it is necessary to redisplay the scene
 				glcanvas.repaint();
 			}
@@ -322,7 +321,6 @@ public final class Example1 {
 		glcanvas.addKeyListener(kl);
 		final Animator animator = new Animator(glcanvas);
 		animator.setUpdateFPSFrames(3, null);
-		ani = animator;
 		final Frame frame = new Frame("Basic Shader");
 		frame.add(glcanvas);
 		frame.addWindowListener(new WindowAdapter() {
@@ -333,9 +331,24 @@ public final class Example1 {
 				System.exit(0);
 			}
 		});
+		frame.addFocusListener(new FocusListener() {
+			@Override
+			public void focusGained(FocusEvent e) {
+				if (animator.isPaused()) {
+					animator.resume();
+				}
+			}
+			
+			@Override
+			public void focusLost(FocusEvent e) {
+				if (animator.isAnimating()) {
+					animator.pause();
+				}
+			}
+		});
 		frame.setSize(600, 600);
 		frame.setVisible(true);
-		frame.addKeyListener(kl);
 		animator.start();
+		glcanvas.requestFocus();
 	}
 }
