@@ -297,6 +297,20 @@ public final class Example1 {
 				// no-op
 			}
 		});
+		Thread animator = new Thread() {
+			@Override
+			public void run() {
+				while (true) {
+					glcanvas.repaint();
+					try {
+						Thread.sleep(1);
+					} catch (InterruptedException e) {
+						break;
+					}
+				}
+			}
+		};
+		animator.setDaemon(true);
 		final Frame frame = new Frame("Basic Shader");
 		frame.add(glcanvas);
 		frame.addWindowListener(new WindowAdapter() {
@@ -309,5 +323,6 @@ public final class Example1 {
 		});
 		frame.setSize(600, 600);
 		frame.setVisible(true);
+		animator.run();
 	}
 }
