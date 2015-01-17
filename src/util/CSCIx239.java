@@ -5,10 +5,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -263,6 +265,7 @@ public final class CSCIx239 {
 			gl2.glGetShaderInfoLog(obj, len, n, buffer);
 			System.err.println(file.getName() + ":\n" + new String(buffer.array()));
 		}
+		len_b.clear();
 		gl2.glGetShaderiv(obj, GL2.GL_COMPILE_STATUS, len_b);
 		if (len_b.get() == 0) {
 			fatal("Error compiling " + file.getName());
@@ -271,7 +274,7 @@ public final class CSCIx239 {
 
 	private static void printProgramLog(GL2 gl2, int obj) {
 		IntBuffer len_b = IntBuffer.allocate(1);
-		gl2.glGetShaderiv(obj, GL2.GL_INFO_LOG_LENGTH, len_b);
+		gl2.glGetProgramiv(obj, GL2.GL_INFO_LOG_LENGTH, len_b);
 		int len = len_b.get();
 		if (len > 1) {
 			IntBuffer n = IntBuffer.allocate(1);
@@ -279,6 +282,7 @@ public final class CSCIx239 {
 			gl2.glGetProgramInfoLog(obj, len, n, buffer);
 			System.err.println(new String(buffer.array()));
 		}
+		len_b.clear();
 		gl2.glGetProgramiv(obj, GL2.GL_LINK_STATUS, len_b);
 		if (len_b.get() == 0) {
 			fatal("Error linking program");
@@ -286,14 +290,20 @@ public final class CSCIx239 {
 	}
 
 	private static String[] readTextFromFile(File file) {
-		try (FileReader fr = new FileReader(file);
-			BufferedReader br = new BufferedReader(fr);) {
-			List<String> ret = new ArrayList<String>();
-			String ln = null;
-			while ((ln = br.readLine()) != null) {
-				ret.add(ln);
-			}
-			return ret.toArray(new String[ret.size()]);
+		try (RandomAccessFile raf = new RandomAccessFile(file, "r");) {
+			StringBuilder sb = new StringBuilder();
+			long length = raf.length();
+			byte[] buffer = new byte[(int) Math.min(length, 2048)];
+			int bytesRead;
+			do {
+				bytesRead = raf.read(buffer);
+				if (bytesRead == -1) {
+					break;
+				}
+				sb.append(new String(Arrays.copyOfRange(buffer, 0, bytesRead)));
+			} while (bytesRead != -1);
+			String[] arr = {sb.toString()};
+			return arr;
 		} catch (FileNotFoundException e) {
 			fatal(file.getName() + " could not be found.");
 			return null;
@@ -303,11 +313,16 @@ public final class CSCIx239 {
 	}
 
 	private static void createShader(GL2 gl2, int prog, int type, File file) {
+		//  Create the shader
 		int shader = gl2.glCreateShader(type);
+		// Load source code from file
 		String[] source = readTextFromFile(file);
 		gl2.glShaderSource(shader, 1, source, null);
+		// Compile the shader
 		gl2.glCompileShader(shader);
+		// Check for errors
 		printShaderLog(gl2, shader, file);
+		// Attach to shader program
 		gl2.glAttachShader(prog, shader);
 	}
 

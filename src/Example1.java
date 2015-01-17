@@ -214,7 +214,11 @@ public final class Example1 {
 			public void init(GLAutoDrawable glautodrawable) {
 				start = System.currentTimeMillis();
 				gl = glautodrawable.getGL().getGL2();
+				// Load object
 				model = CSCIx239.loadOBJ(gl, new File("tyra.obj"));
+				// Create Shader Programs
+				shader[1] = CSCIx239.createShaderProg(gl, "basic.vert", "basic.frag");
+				CSCIx239.errCheck(gl, "init");
 			}
 			
 			@Override
