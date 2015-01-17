@@ -16,9 +16,12 @@ import java.util.List;
 import java.util.Map;
 
 import javax.media.opengl.GL2;
+import javax.media.opengl.GLException;
 import javax.media.opengl.glu.GLU;
 
 import com.jogamp.opengl.util.gl2.GLUT;
+import com.jogamp.opengl.util.texture.Texture;
+import com.jogamp.opengl.util.texture.TextureIO;
 
 public final class CSCIx239 {
 	private static final Map<String, Material> materials = new HashMap<String, Material>();
@@ -54,9 +57,17 @@ public final class CSCIx239 {
 		}
 	}
 
-	public static int loadTexBMP(File file) {
-		// TODO STUB
-		return 0;
+	public static int loadTexBMP(GL2 gl2, File file) {
+		// FIXME Not working
+		try {
+			Texture texture = TextureIO.newTexture(file, false);
+			texture.setTexParameteri(gl2, GL2.GL_TEXTURE_MIN_FILTER, GL2.GL_LINEAR);
+			texture.setTexParameteri(gl2, GL2.GL_TEXTURE_MAG_FILTER, GL2.GL_LINEAR);
+			int tId = texture.getTextureObject();
+			return tId;
+		} catch (GLException | IOException e) {
+			throw new RuntimeException(e.getLocalizedMessage(), e);
+		}
 	}
 
 	public static void project(GL2 gl2, double fov, double asp, double dim) {
@@ -97,7 +108,7 @@ public final class CSCIx239 {
 		return ret;
 	}
 
-	private static void loadMaterial(File file) {
+	private static void loadMaterial(GL2 gl2, File file) {
 		try (FileReader fr = new FileReader(file);
 			BufferedReader br = new BufferedReader(fr);) {
 			String line = null;
@@ -127,7 +138,7 @@ public final class CSCIx239 {
 				} else if (line.charAt(0) == 'N' && line.charAt(1) == 's') {
 					mat.Ns = readFloat(line.substring(2), 1);
 				} else if (line.startsWith("map_Kd")) {
-					mat.map = loadTexBMP(new File(line.substring(7)));
+					mat.map = loadTexBMP(gl2, new File(line.substring(7)));
 				}
 				// Ignore line if we get here
 			}
@@ -235,7 +246,7 @@ public final class CSCIx239 {
 				} else if (line.startsWith("usemtl")) { // Use material
 					setMaterial(gl2, line.substring(7));
 				} else if (line.equals("mtllib")) { // Load materials
-					loadMaterial(new File(line.substring(7)));
+					loadMaterial(gl2, new File(line.substring(7)));
 				}
 			}
 			return list;

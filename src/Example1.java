@@ -28,14 +28,14 @@ public final class Example1 {
 	private static long start;
 	private static boolean axes = true; // Display axes
 	private static int mode = 0; // Shader mode
-	private static boolean perspProj = true; // Projection type
+	private static boolean perspProj = false; // Projection type
 	private static int obj = 0; // Object
 	private static int th = 0; // Azimuth of view angle
 	private static int ph = 0; // Elevation of view angle
 	private static int fov = 55; // Field of view (for perspective)
 	private static double asp = 1; // Aspect ratio
 	private static double dim = 3.0; // Size of world
-	private static int model[] = new int[2]; // Model display list
+	private static int model = 0; // Model display list
 	private static int shader[] = {0,0}; // Shader program
 	private static String text[] = {"No Shader", "Basic Shader"};
 
@@ -174,10 +174,8 @@ public final class Example1 {
 		}
 		// Draw the model, teapot or cube
 		gl2.glColor3f(1,1,0);
-		//if (obj == 3) {
-		//	gl2.glCallList(model[1]);
 		if (obj == 2) {
-			gl2.glCallList(model[0]);
+			gl2.glCallList(model);
 		} else if (obj == 1) {
 			glt.glutSolidTeapot(1.0);
 		} else {
@@ -232,9 +230,7 @@ public final class Example1 {
 				gl = glautodrawable.getGL().getGL2();
 				glc = GLContext.getCurrent();
 				// Load object
-				model[0] = CSCIx239.loadOBJ(gl, new File("tyra.obj"));
-				// Load another object
-				//model[1] = CSCIx239.loadOBJ(gl, new File("amemasu.obj"));
+				model = CSCIx239.loadOBJ(gl, new File("tyra.obj"));
 				// Create Shader Programs
 				shader[1] = CSCIx239.createShaderProg(gl, "basic.vert", "basic.frag");
 			}
