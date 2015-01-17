@@ -4,11 +4,12 @@ import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 
 import javax.media.opengl.GL2;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCapabilities;
-import javax.media.opengl.GLContext;
 import javax.media.opengl.GLEventListener;
 import javax.media.opengl.GLProfile;
 import javax.media.opengl.awt.GLCanvas;
@@ -34,9 +35,15 @@ public final class Example1 {
 	private static int shader[] = {0,0}; //  Shader program
 	private static String text[] = {"No Shader", "Basic Shader"};
 
+	private static final DecimalFormat df = new DecimalFormat("##.0");
 	private static final GLUT glt = new GLUT();
+	private static Animator ani;
 	private static GLU glu;
 	private static GL2 gl;
+
+	static {
+		df.setRoundingMode(RoundingMode.HALF_UP);
+	}
 
 	private static void cube(GL2 gl2) {
 		//  Front
@@ -195,6 +202,8 @@ public final class Example1 {
 			gl2.glRasterPos3d(0.0,0.0,len);
 			CSCIx239.print(glt, "Z");
 		}
+		gl2.glWindowPos2i(5, 560);
+		CSCIx239.print(glt, df.format(ani.getLastFPS()) + " FPS");
 		//  Display parameters
 		gl2.glWindowPos2i(5,5);
 		CSCIx239.print(glt, "Angle=" + th + "," + ph + "  Dim=" + dim + " Projection=" + (perspProj ? "Perpective" : "Orthogonal") + " " + text[mode]);
@@ -216,7 +225,6 @@ public final class Example1 {
 			
 			@Override
 			public void init(GLAutoDrawable glautodrawable) {
-				System.out.println(Thread.currentThread().getName());
 				start = System.currentTimeMillis();
 				gl = glautodrawable.getGL().getGL2();
 				glu = GLU.createGLU(gl);
@@ -236,6 +244,7 @@ public final class Example1 {
 			
 			@Override
 			public void display(GLAutoDrawable glautodrawable) {
+				//glautodrawable.getAnimator().setUpdateFPSFrames(300, null);
 				// Called when rendering is necessary
 				Example1.display(glautodrawable.getGL().getGL2(), glautodrawable.getSurfaceWidth(), glautodrawable.getSurfaceHeight());
 			}
@@ -305,22 +314,10 @@ public final class Example1 {
 				// no-op
 			}
 		};
-		/*Thread animator = new Thread() {
-			@Override
-			public void run() {
-				while (true) {
-					glcanvas.repaint();
-					try {
-						Thread.sleep(1);
-					} catch (InterruptedException e) {
-						break;
-					}
-				}
-			}
-		};*/
 		glcanvas.addKeyListener(kl);
-		Animator animator = new Animator(glcanvas);
-		//animator.setDaemon(true);
+		final Animator animator = new Animator(glcanvas);
+		animator.setUpdateFPSFrames(3, null);
+		ani = animator;
 		final Frame frame = new Frame("Basic Shader");
 		frame.add(glcanvas);
 		frame.addWindowListener(new WindowAdapter() {
