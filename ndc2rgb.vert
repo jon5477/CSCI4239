@@ -3,7 +3,5 @@
 varying vec4 color;
 
 void main() {
-	// Normalized Device Coordinates: gl_Vertex
-	// RGB Color Vector: color
-	color = mix(vec4(0), vec4(1), ((gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex) + vec4(1)) / vec4(2));
+	color = ((gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex) / gl_Position.w + vec4(1)) / vec4(2);
 }

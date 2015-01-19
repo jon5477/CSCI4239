@@ -24,8 +24,6 @@ import util.CSCIx239;
 import com.jogamp.opengl.util.Animator;
 import com.jogamp.opengl.util.gl2.GLUT;
 
-import ex.Example1;
-
 /**
  * Final Project for CSCI4239.
  * 
@@ -205,15 +203,15 @@ public final class Project {
 			gl2.glVertex3d(0.0,0.0,len);
 			gl2.glEnd();
 			// Label axes
-			gl2.glRasterPos3d(len,0.0,0.0);
+			gl2.glRasterPos3d(len, 0.0, 0.0);
 			CSCIx239.print(glt, "X");
-			gl2.glRasterPos3d(0.0,len,0.0);
+			gl2.glRasterPos3d(0.0, len, 0.0);
 			CSCIx239.print(glt, "Y");
-			gl2.glRasterPos3d(0.0,0.0,len);
+			gl2.glRasterPos3d(0.0, 0.0, len);
 			CSCIx239.print(glt, "Z");
 		}
 		// Display FPS
-		gl2.glWindowPos2i(5, 560);
+		gl2.glWindowPos2i(5, height - 15);
 		CSCIx239.print(glt, df.format(anim.getLastFPS()) + " FPS");
 		// Display parameters
 		gl2.glWindowPos2i(5,5);
