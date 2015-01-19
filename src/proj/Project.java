@@ -1,4 +1,4 @@
-package hw;
+package proj;
 
 import java.awt.Frame;
 import java.awt.event.KeyEvent;
@@ -24,7 +24,17 @@ import util.CSCIx239;
 import com.jogamp.opengl.util.Animator;
 import com.jogamp.opengl.util.gl2.GLUT;
 
-public final class Assignment1 {
+import ex.Example1;
+
+/**
+ * Final Project for CSCI4239.
+ * 
+ * League of Legends Character Loader and Interactive Preview
+ * 
+ * @author Jonathan Huang
+ *
+ */
+public final class Project {
 	private static long start;
 	private static boolean axes = true; // Display axes
 	private static int mode = 0; // Shader mode
@@ -36,8 +46,8 @@ public final class Assignment1 {
 	private static double asp = 1; // Aspect ratio
 	private static double dim = 3.0; // Size of world
 	private static int model = 0; // Model display list
-	private static int shader[] = new int[2]; // Shader program
-	private static String text[] = {"No Shader", "NDC2RGB Shader"};
+	private static int shader[] = {0,0}; // Shader program
+	private static String text[] = {"No Shader", "Basic Shader"};
 
 	private static final DecimalFormat df = new DecimalFormat("##.0");
 	private static final GLUT glt = new GLUT();
@@ -221,7 +231,7 @@ public final class Assignment1 {
 		glcanvas.addGLEventListener(new GLEventListener() {
 			@Override
 			public void reshape(GLAutoDrawable glautodrawable, int x, int y, int width, int height) {
-				Assignment1.reshape(glautodrawable.getGL().getGL2(), width, height);
+				Project.reshape(glautodrawable.getGL().getGL2(), width, height);
 			}
 			
 			@Override
@@ -232,7 +242,7 @@ public final class Assignment1 {
 				// Load object
 				model = CSCIx239.loadOBJ(gl, new File("tyra.obj"));
 				// Create Shader Programs
-				shader[1] = CSCIx239.createShaderProg(gl, "ndc2rgb.vert", "ndc2rgb.frag");
+				//shader[1] = CSCIx239.createShaderProg(gl, "basic.vert", "basic.frag");
 			}
 			
 			@Override
@@ -243,7 +253,7 @@ public final class Assignment1 {
 			@Override
 			public void display(GLAutoDrawable glautodrawable) {
 				// Called when rendering is necessary
-				Assignment1.display(glautodrawable.getGL().getGL2(), glautodrawable.getAnimator(), glautodrawable.getSurfaceWidth(), glautodrawable.getSurfaceHeight());
+				Project.display(glautodrawable.getGL().getGL2(), glautodrawable.getAnimator(), glautodrawable.getSurfaceWidth(), glautodrawable.getSurfaceHeight());
 			}
 		});
 		KeyListener kl = new KeyListener() {
@@ -253,26 +263,6 @@ public final class Assignment1 {
 					//  Reset view angle
 					case '0':
 						th = ph = 0;
-						break;
-					//  Toggle axes
-					case 'a':
-					case 'A':
-						axes = !axes;
-						break;
-					//  Toggle projection type
-					case 'p':
-					case 'P':
-						perspProj = !perspProj;
-						break;
-					//  Toggle objects
-					case 'o':
-					case 'O':
-						obj = (obj + 1) % 3;
-						break;
-					//  Cycle modes
-					case 'm':
-					case 'M':
-						mode = 1-mode;
 						break;
 					default: {
 						if (key.isActionKey()) {
@@ -317,7 +307,7 @@ public final class Assignment1 {
 		glcanvas.addKeyListener(kl);
 		final Animator animator = new Animator(glcanvas);
 		animator.setUpdateFPSFrames(3, null);
-		final Frame frame = new Frame("NDC to RGB Shader - Jonathan Huang");
+		final Frame frame = new Frame("Basic Shader");
 		frame.add(glcanvas);
 		frame.addWindowListener(new WindowAdapter() {
 			@Override
