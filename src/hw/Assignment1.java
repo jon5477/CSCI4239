@@ -203,7 +203,7 @@ public final class Assignment1 {
 			CSCIx239.print(glt, "Z");
 		}
 		// Display FPS
-		gl2.glWindowPos2i(5, 560);
+		gl2.glWindowPos2i(5, height - 15);
 		CSCIx239.print(glt, df.format(anim.getLastFPS()) + " FPS");
 		// Display parameters
 		gl2.glWindowPos2i(5,5);
