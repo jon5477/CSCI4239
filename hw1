@@ -1,0 +1,3 @@
+#!/bin/sh
+export CLASSPATH=".:hw1.jar:jogl-linux/*"
+java hw.Assignment1

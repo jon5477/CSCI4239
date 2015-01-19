@@ -15,8 +15,11 @@ JFLG=-d bin/ -source 1.7
 endif
 
 compile:
+	if [ ! -d "bin/" ]; then \
+		mkdir "bin/"; \
+	fi
 	javac $(LIBS) $(JFLG) src/**/*.java
-	jar cmf manifest.txt $(JAR) bin/*
+	jar vcmf manifest.txt $(JAR) -C bin/ . 
 
 # Cleaning
 clean:
