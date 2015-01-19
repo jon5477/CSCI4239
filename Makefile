@@ -19,7 +19,7 @@ compile:
 		mkdir "bin/"; \
 	fi
 	javac $(LIBS) $(JFLG) src/**/*.java
-	jar vcmf manifest.txt $(JAR) -C bin/ . 
+	jar cmf manifest.txt $(JAR) -C bin/ . 
 
 # Cleaning
 clean:
