@@ -1,3 +1,5 @@
+// Transform World Coordinates -> NDC Coordinates
+
 // Basic vertex shader
 
 uniform float time;
