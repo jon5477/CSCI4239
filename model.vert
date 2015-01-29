@@ -1,5 +1,5 @@
 varying float lightIntensity;
-varying vec2 ModelPos;
+varying vec2 modelPos;
 uniform float time;
 
 // Phong lighting intensity only
@@ -33,7 +33,7 @@ void main() {
 	// Scalar light intensity (for fragment shader)
 	lightIntensity = phong();
 	// Save model coordinates (for fragment shader)
-	ModelPos = gl_Vertex.xy;
+	modelPos = gl_Vertex.xy;
 	// Color calculations
 	vec4 pos = gl_ModelViewMatrix * gl_Vertex;
 	gl_Position = gl_ProjectionMatrix * pos;
