@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.media.opengl.GL2;
+import javax.media.opengl.GL3;
 import javax.media.opengl.GLException;
 import javax.media.opengl.glu.GLU;
 
@@ -57,12 +58,34 @@ public final class CSCIx239 {
 		}
 	}
 
+	public static void errCheck(GL3 gl2, String s) {
+		int err = gl2.glGetError();
+		if (err > 0) {
+			GLU glu = new GLU();
+			String errstr = glu.gluErrorString(err);
+			System.err.println("ERROR: " + errstr + " [" + s + "]");
+		}
+	}
+
 	public static int loadTexBMP(GL2 gl2, File file) {
 		// FIXME Not working
 		try {
 			Texture texture = TextureIO.newTexture(file, false);
 			texture.setTexParameteri(gl2, GL2.GL_TEXTURE_MIN_FILTER, GL2.GL_LINEAR);
 			texture.setTexParameteri(gl2, GL2.GL_TEXTURE_MAG_FILTER, GL2.GL_LINEAR);
+			int tId = texture.getTextureObject();
+			return tId;
+		} catch (GLException | IOException e) {
+			throw new RuntimeException(e.getLocalizedMessage(), e);
+		}
+	}
+
+	public static int loadTexBMP(GL3 gl, File file) {
+		// FIXME Not working
+		try {
+			Texture texture = TextureIO.newTexture(file, false);
+			texture.setTexParameteri(gl, GL3.GL_TEXTURE_MIN_FILTER, GL3.GL_LINEAR);
+			texture.setTexParameteri(gl, GL3.GL_TEXTURE_MAG_FILTER, GL3.GL_LINEAR);
 			int tId = texture.getTextureObject();
 			return tId;
 		} catch (GLException | IOException e) {
@@ -139,6 +162,47 @@ public final class CSCIx239 {
 					mat.Ns = readFloat(line.substring(2), 1);
 				} else if (line.startsWith("map_Kd")) {
 					mat.map = loadTexBMP(gl2, new File(line.substring(7)));
+				}
+				// Ignore line if we get here
+			}
+		} catch (FileNotFoundException e) {
+			System.err.println("Cannot open material file " + file.getName());
+		} catch (IOException e) {
+			throw new RuntimeException(e.getLocalizedMessage(), e);
+		}
+	}
+
+	private static void loadMaterial(GL3 gl, File file) {
+		try (FileReader fr = new FileReader(file);
+			BufferedReader br = new BufferedReader(fr);) {
+			String line = null;
+			Material mat = null;
+			while ((line = br.readLine()) != null) {
+				if (line.startsWith("newmtl")) {
+					if (mat != null) {
+						materials.put(mat.name, mat);
+						mat = null;
+					}
+					String name = line.substring(7);
+					mat = new Material();
+					mat.name = name;
+				} else if (mat == null) {
+					// If no material short circuit here
+					continue;
+				} else if (line.charAt(0) == 'K') {
+					if (line.charAt(1) == 'e') {
+						mat.Ke = readFloat(line.substring(2), 3);
+					} else if (line.charAt(1) == 'a') {
+						mat.Ka = readFloat(line.substring(2), 3);
+					} else if (line.charAt(1) == 'd') {
+						mat.Kd = readFloat(line.substring(2), 3);
+					} else if (line.charAt(1) == 's') {
+						mat.Ks = readFloat(line.substring(2), 3);
+					}
+				} else if (line.charAt(0) == 'N' && line.charAt(1) == 's') {
+					mat.Ns = readFloat(line.substring(2), 1);
+				} else if (line.startsWith("map_Kd")) {
+					mat.map = loadTexBMP(gl, new File(line.substring(7)));
 				}
 				// Ignore line if we get here
 			}
@@ -266,18 +330,130 @@ public final class CSCIx239 {
 		}
 	}
 
-	private static void printShaderLog(GL2 gl2, int obj, File file) {
+	public static int loadOBJ(GL3 gl, File file) {
+		GL2 gl2 = gl.getGL2();
+		List<float[]> verts = new ArrayList<float[]>();
+		List<float[]> normals = new ArrayList<float[]>();
+		List<float[]> textures = new ArrayList<float[]>();
+		try (FileReader fr = new FileReader(file);
+			BufferedReader br = new BufferedReader(fr);) {
+			// Start new displaylist
+			int list = gl2.glGenLists(1);
+			gl2.glNewList(list, GL2.GL_COMPILE);
+			// Push attributes for textures
+			gl2.glPushAttrib(GL2.GL_TEXTURE_BIT);
+			CSCIx239.errCheck(gl, "loadOBJ");
+			String line = null;
+			while ((line = br.readLine()) != null) {
+				if (line.length() == 0) {
+					continue;
+				}
+				if (line.charAt(0) == 'v') {
+					if (line.charAt(1) == ' ') { // Vertex coordinates (always 3)
+						float[] coords = readFloat(line.substring(3), 3);
+						verts.add(coords);
+					} else if (line.charAt(1) == 'n') { // Normal coordinates (always 3)
+						float[] coords = readFloat(line.substring(3), 3);
+						normals.add(coords);
+					} else if (line.charAt(1) == 't') { // Texture coordinates (always 2)
+						float[] coords = readFloat(line.substring(3), 2);
+						textures.add(coords);
+					}
+				} else if (line.charAt(0) == 'f') { // Read and draw facets
+					gl2.glBegin(GL2.GL_POLYGON);
+					String[] tuple = line.substring(2).split(" ");
+					for (int i = 0; i < tuple.length; i++) {
+						int Kv = 0, Kt = 0, Kn = 0;
+						String[] pts = tuple[i].split("/{1,2}"); // Kv, Kt, Kn
+						if (pts.length == 3) { // Vertex/Texture/Normal triplet
+							Kv = Integer.parseInt(pts[0]);
+							Kt = Integer.parseInt(pts[1]);
+							Kn = Integer.parseInt(pts[2]);
+						} else if (pts.length == 2) { // Vertex/Normal pairs
+							Kv = Integer.parseInt(pts[0]);
+							Kn = Integer.parseInt(pts[1]);
+						} else if (pts.length == 1) { // Vertex index
+							Kv = Integer.parseInt(pts[0]);
+						} else { // This is an error
+							fatal("Invalid facet" + tuple[i]);
+						}
+						//  Check that vertex is in range
+						int numVertices = verts.size();
+						int numNormals = normals.size();
+						int numTextures = textures.size();
+						if (Kv < -numVertices || Kv > numVertices) {
+							fatal("Vertex " + Kv + " out of range 1-" + verts.size());
+						}
+						if (Kn < -numNormals || Kn > numNormals) {
+							fatal("Normal " + Kn + " out of range 1-" + normals.size());
+						}
+						if (Kt < -numTextures || Kt > numTextures) {
+							fatal("Texture " + Kt + " out of range 1-" + textures.size());
+						}
+						//  Draw vertex
+						if (Kt > 0) {
+							gl2.glTexCoord2fv(FloatBuffer.wrap(textures.get(Kt - 1)));
+						}
+						if (Kn > 0) {
+							gl2.glNormal3fv(FloatBuffer.wrap(normals.get(Kn - 1)));
+						}
+						if (Kv > 0) {
+							gl2.glVertex3fv(FloatBuffer.wrap(verts.get(Kv - 1)));
+						}
+					}
+					gl2.glEnd();
+				} else if (line.startsWith("usemtl")) { // Use material
+					setMaterial(gl2, line.substring(7));
+				} else if (line.equals("mtllib")) { // Load materials
+					loadMaterial(gl, new File(line.substring(7)));
+				}
+			}
+			return list;
+		} catch (FileNotFoundException e) {
+			fatal(file.getName() + " could not be found.");
+			return 0;
+		} catch (IOException e) {
+			throw new RuntimeException(e.getLocalizedMessage(), e);
+		} finally {
+			// Pop attributes (textures)
+			gl2.glPopAttrib();
+			gl2.glEndList();
+			// Free arrays
+			verts.clear();
+			normals.clear();
+			textures.clear();
+		}
+	}
+
+	private static void printShaderLog(GL2 gl, int obj, File file) {
 		IntBuffer len_b = IntBuffer.allocate(1);
-		gl2.glGetShaderiv(obj, GL2.GL_INFO_LOG_LENGTH, len_b);
+		gl.glGetShaderiv(obj, GL2.GL_INFO_LOG_LENGTH, len_b);
 		int len = len_b.get();
 		if (len > 1) {
 			IntBuffer n = IntBuffer.allocate(1);
 			ByteBuffer buffer = ByteBuffer.allocate(len);
-			gl2.glGetShaderInfoLog(obj, len, n, buffer);
+			gl.glGetShaderInfoLog(obj, len, n, buffer);
 			System.err.println(file.getName() + ":\n" + new String(buffer.array()));
 		}
 		len_b.clear();
-		gl2.glGetShaderiv(obj, GL2.GL_COMPILE_STATUS, len_b);
+		gl.glGetShaderiv(obj, GL2.GL_COMPILE_STATUS, len_b);
+		if (len_b.get() == 0) {
+			fatal("Error compiling " + file.getName());
+		}
+	}
+
+	private static void printShaderLog(GL3 gl, int obj, File file) {
+		IntBuffer len_b = IntBuffer.allocate(1);
+		gl.glGetShaderiv(obj, GL3.GL_INFO_LOG_LENGTH, len_b);
+		int len = len_b.get();
+		if (len > 1) {
+			IntBuffer n = IntBuffer.allocate(1);
+			ByteBuffer buffer = ByteBuffer.allocate(len);
+			gl.glGetShaderInfoLog(obj, len, n, buffer);
+			System.err.println(file.getName() + ":\n" + new String(buffer.array()));
+		}
+		len_b.clear();
+		gl.glGetShaderiv(obj, GL3.GL_COMPILE_STATUS, len_b);
 		if (len_b.get() == 0) {
 			fatal("Error compiling " + file.getName());
 		}
@@ -295,6 +471,23 @@ public final class CSCIx239 {
 		}
 		len_b.clear();
 		gl2.glGetProgramiv(obj, GL2.GL_LINK_STATUS, len_b);
+		if (len_b.get() == 0) {
+			fatal("Error linking program");
+		}
+	}
+
+	private static void printProgramLog(GL3 gl, int obj) {
+		IntBuffer len_b = IntBuffer.allocate(1);
+		gl.glGetProgramiv(obj, GL3.GL_INFO_LOG_LENGTH, len_b);
+		int len = len_b.get();
+		if (len > 1) {
+			IntBuffer n = IntBuffer.allocate(1);
+			ByteBuffer buffer = ByteBuffer.allocate(len);
+			gl.glGetProgramInfoLog(obj, len, n, buffer);
+			System.err.println(new String(buffer.array()));
+		}
+		len_b.clear();
+		gl.glGetProgramiv(obj, GL3.GL_LINK_STATUS, len_b);
 		if (len_b.get() == 0) {
 			fatal("Error linking program");
 		}
@@ -323,32 +516,61 @@ public final class CSCIx239 {
 		}
 	}
 
-	private static void createShader(GL2 gl2, int prog, int type, File file) {
+	private static void createShader(GL2 gl, int prog, int type, File file) {
 		//  Create the shader
-		int shader = gl2.glCreateShader(type);
+		int shader = gl.glCreateShader(type);
 		// Load source code from file
 		String[] source = readTextFromFile(file);
-		gl2.glShaderSource(shader, 1, source, null);
+		gl.glShaderSource(shader, 1, source, null);
 		// Compile the shader
-		gl2.glCompileShader(shader);
+		gl.glCompileShader(shader);
 		// Check for errors
-		printShaderLog(gl2, shader, file);
+		printShaderLog(gl, shader, file);
 		// Attach to shader program
-		gl2.glAttachShader(prog, shader);
+		gl.glAttachShader(prog, shader);
 	}
 
-	public static int createShaderProg(GL2 gl2, String vertStr, String fragStr) {
-		int prog = gl2.glCreateProgram();
+	private static void createShader(GL3 gl, int prog, int type, File file) {
+		//  Create the shader
+		int shader = gl.glCreateShader(type);
+		// Load source code from file
+		String[] source = readTextFromFile(file);
+		gl.glShaderSource(shader, 1, source, null);
+		// Compile the shader
+		gl.glCompileShader(shader);
+		// Check for errors
+		printShaderLog(gl, shader, file);
+		// Attach to shader program
+		gl.glAttachShader(prog, shader);
+	}
+
+	public static int createShaderProg(GL2 gl, String vertStr, String fragStr) {
+		int prog = gl.glCreateProgram();
 		File vertFile = new File(vertStr);
 		if (vertFile.exists()) {
-			createShader(gl2, prog, GL2.GL_VERTEX_SHADER, vertFile);
+			createShader(gl, prog, GL2.GL_VERTEX_SHADER, vertFile);
 		}
 		File fragFile = new File(fragStr);
 		if (fragFile.exists()) {
-			createShader(gl2, prog, GL2.GL_FRAGMENT_SHADER, fragFile);
+			createShader(gl, prog, GL2.GL_FRAGMENT_SHADER, fragFile);
 		}
-		gl2.glLinkProgram(prog);
-		printProgramLog(gl2, prog);
+		gl.glLinkProgram(prog);
+		printProgramLog(gl, prog);
+		return prog;
+	}
+
+	public static int createShaderProg(GL3 gl, String vertStr, String fragStr) {
+		int prog = gl.glCreateProgram();
+		File vertFile = new File(vertStr);
+		if (vertFile.exists()) {
+			createShader(gl, prog, GL3.GL_VERTEX_SHADER, vertFile);
+		}
+		File fragFile = new File(fragStr);
+		if (fragFile.exists()) {
+			createShader(gl, prog, GL3.GL_FRAGMENT_SHADER, fragFile);
+		}
+		gl.glLinkProgram(prog);
+		printProgramLog(gl, prog);
 		return prog;
 	}
 }
