@@ -6,5 +6,6 @@
 	<classpathentry kind="lib" path="/Users/jonathanhuang/CSCI4239/jogl-macosx/gluegen-rt.jar"/>
 	<classpathentry kind="lib" path="/Users/jonathanhuang/CSCI4239/jogl-macosx/jogl-all-natives-macosx-universal.jar"/>
 	<classpathentry kind="lib" path="/Users/jonathanhuang/CSCI4239/jogl-macosx/jogl-all.jar"/>
+	<classpathentry kind="lib" path="ujmp-complete-0.2.5.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

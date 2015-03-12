@@ -1,5 +1,5 @@
-# Assignment 1
-JAR=hw1.jar
+# Assignment 8
+JAR=hw8.jar
 
 # Main target
 all: compile

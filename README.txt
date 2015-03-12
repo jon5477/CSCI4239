@@ -11,7 +11,10 @@ How to compile:
 The makefile is supplied for compiling the program. A simple "make" should suffice.
 
 How to run:
-The hw1 file is a shell script specific for running the program for Assignment 1.
+The hw8 file is a shell script specific for running the program for Assignment 8.
 
 Time taken to complete the assignment:
-Approximately 24 hours. I had to write my own specific libraries for parsing the OBJs.
+Approximately 4 hours. Most of the work put into this assignment was working on the shaders
+to generate the lava-based perlin noise. Some of the shader code was taken from Example 18,
+used specifically for generating the noise. The color interpolation was added to the base
+shader code.

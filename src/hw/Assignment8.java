@@ -7,12 +7,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.math.RoundingMode;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 import java.text.DecimalFormat;
 
 import javax.media.opengl.GL2;
-import javax.media.opengl.GL3;
 import javax.media.opengl.GLAnimatorControl;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCapabilities;
@@ -27,7 +24,7 @@ import util.CSCIx239;
 import com.jogamp.opengl.util.Animator;
 import com.jogamp.opengl.util.gl2.GLUT;
 
-public final class Assignment4 {
+public final class Assignment8 {
 	private static long start;
 	private static boolean axes = true; // Display axes
 	private static int mode = 0; // Shader mode
@@ -41,98 +38,126 @@ public final class Assignment4 {
 	private static int zh = 90; //  Light azimuth
 	private static float y_light = 2; //  Light elevation
 	private static int model = 0; // Model display list
-	private static int shader; // Shader program
-	private static String text[] = {"No Shader", "Texture Shader"};
+	private static int shader[] = new int[2]; // Shader program
+	private static String text[] = {"No Shader", "Noise Shader"};
 
 	private static final DecimalFormat df = new DecimalFormat("##.0");
 	private static final GLUT glt = new GLUT();
 	private static GLContext glc;
-	private static GL3 gl;
-
-	private static final IntBuffer cube_buffer = IntBuffer.allocate(1);
-	private static final float cube_data[] =  // Vertex data
-		{
-		//  X  Y  Z  W   Nx Ny Nz    R G B   s t
-		//  Front
-		+1,+1,+1,+1,   0, 0,+1,   1,0,0,  1,1,
-		-1,+1,+1,+1,   0, 0,+1,   1,0,0,  0,1,
-		+1,-1,+1,+1,   0, 0,+1,   1,0,0,  1,0,
-		-1,+1,+1,+1,   0, 0,+1,   1,0,0,  0,1,
-		+1,-1,+1,+1,   0, 0,+1,   1,0,0,  1,0,
-		-1,-1,+1,+1,   0, 0,+1,   1,0,0,  0,0,
-		//  Back
-		-1,-1,-1,+1,   0, 0,-1,   0,0,1,  1,0,
-		+1,-1,-1,+1,   0, 0,-1,   0,0,1,  0,0,
-		-1,+1,-1,+1,   0, 0,-1,   0,0,1,  1,1,
-		+1,-1,-1,+1,   0, 0,-1,   0,0,1,  0,0,
-		-1,+1,-1,+1,   0, 0,-1,   0,0,1,  1,1,
-		+1,+1,-1,+1,   0, 0,-1,   0,0,1,  0,1,
-		//  Right
-		+1,+1,+1,+1,  +1, 0, 0,   1,1,0,  0,1,
-		+1,-1,+1,+1,  +1, 0, 0,   1,1,0,  0,0,
-		+1,+1,-1,+1,  +1, 0, 0,   1,1,0,  1,1,
-		+1,-1,+1,+1,  +1, 0, 0,   1,1,0,  0,0,
-		+1,+1,-1,+1,  +1, 0, 0,   1,1,0,  1,1,
-		+1,-1,-1,+1,  +1, 0, 0,   1,1,0,  1,0,
-		//  Left
-		-1,+1,+1,+1,  -1, 0, 0,   0,1,0,  1,1,
-		-1,+1,-1,+1,  -1, 0, 0,   0,1,0,  0,1,
-		-1,-1,+1,+1,  -1, 0, 0,   0,1,0,  1,0,
-		-1,+1,-1,+1,  -1, 0, 0,   0,1,0,  0,1,
-		-1,-1,+1,+1,  -1, 0, 0,   0,1,0,  1,0,
-		-1,-1,-1,+1,  -1, 0, 0,   0,1,0,  0,0,
-		//  Top
-		+1,+1,+1,+1,   0,+1, 0,   0,1,1,  1,0,
-		+1,+1,-1,+1,   0,+1, 0,   0,1,1,  1,1,
-		-1,+1,+1,+1,   0,+1, 0,   0,1,1,  0,0,
-		+1,+1,-1,+1,   0,+1, 0,   0,1,1,  1,1,
-		-1,+1,+1,+1,   0,+1, 0,   0,1,1,  0,0,
-		-1,+1,-1,+1,   0,+1, 0,   0,1,1,  0,1,
-		//  Bottom
-		-1,-1,-1,+1,   0,-1, 0,   1,0,1,  0,0,
-		+1,-1,-1,+1,   0,-1, 0,   1,0,1,  1,0,
-		-1,-1,+1,+1,   0,-1, 0,   1,0,1,  0,1,
-		+1,-1,-1,+1,   0,-1, 0,   1,0,1,  1,0,
-		-1,-1,+1,+1,   0,-1, 0,   1,0,1,  0,1,
-		+1,-1,+1,+1,   0,-1, 0,   1,0,1,  1,1,
-	};
+	private static GL2 gl;
 
 	static {
 		df.setRoundingMode(RoundingMode.HALF_UP);
 	}
 
-	private static void initCube(GL3 gl) {
-		// Copy data to vertex buffer object
-		gl.glGenBuffers(1, cube_buffer);
-		gl.glBindBuffer(GL3.GL_ARRAY_BUFFER, cube_buffer.get());
-		gl.glBufferData(GL3.GL_ARRAY_BUFFER, cube_data.length, FloatBuffer.wrap(cube_data), GL3.GL_STATIC_DRAW);
-		//  Unbind this buffer
-		gl.glBindBuffer(GL3.GL_ARRAY_BUFFER, 0);
+	private static void cube(GL2 gl2) {
+		//  Front
+		gl2.glColor3f(1,0,0);
+		gl2.glBegin(GL2.GL_QUADS);
+		gl2.glNormal3f( 0, 0,+1);
+		gl2.glTexCoord2f(0,0);
+		gl2.glVertex3f(-1,-1,+1);
+		gl2.glTexCoord2f(1,0);
+		gl2.glVertex3f(+1,-1,+1);
+		gl2.glTexCoord2f(1,1);
+		gl2.glVertex3f(+1,+1,+1);
+		gl2.glTexCoord2f(0,1);
+		gl2.glVertex3f(-1,+1,+1);
+		gl2.glEnd();
+		//  Back
+		gl2.glColor3f(0,0,1);
+		gl2.glBegin(GL2.GL_QUADS);
+		gl2.glNormal3f( 0, 0,-1);
+		gl2.glTexCoord2f(0,0);
+		gl2.glVertex3f(+1,-1,-1);
+		gl2.glTexCoord2f(1,0);
+		gl2.glVertex3f(-1,-1,-1);
+		gl2.glTexCoord2f(1,1);
+		gl2.glVertex3f(-1,+1,-1);
+		gl2.glTexCoord2f(0,1);
+		gl2.glVertex3f(+1,+1,-1);
+		gl2.glEnd();
+		//  Right
+		gl2.glColor3f(1,1,0);
+		gl2.glBegin(GL2.GL_QUADS);
+		gl2.glNormal3f(+1, 0, 0);
+		gl2.glTexCoord2f(0,0);
+		gl2.glVertex3f(+1,-1,+1);
+		gl2.glTexCoord2f(1,0);
+		gl2.glVertex3f(+1,-1,-1);
+		gl2.glTexCoord2f(1,1);
+		gl2.glVertex3f(+1,+1,-1);
+		gl2.glTexCoord2f(0,1);
+		gl2.glVertex3f(+1,+1,+1);
+		gl2.glEnd();
+		//  Left
+		gl2.glColor3f(0,1,0);
+		gl2.glBegin(GL2.GL_QUADS);
+		gl2.glNormal3f(-1, 0, 0);
+		gl2.glTexCoord2f(0,0);
+		gl2.glVertex3f(-1,-1,-1);
+		gl2.glTexCoord2f(1,0);
+		gl2.glVertex3f(-1,-1,+1);
+		gl2.glTexCoord2f(1,1);
+		gl2.glVertex3f(-1,+1,+1);
+		gl2.glTexCoord2f(0,1);
+		gl2.glVertex3f(-1,+1,-1);
+		gl2.glEnd();
+		//  Top
+		gl2.glColor3f(0,1,1);
+		gl2.glBegin(GL2.GL_QUADS);
+		gl2.glNormal3f( 0,+1, 0);
+		gl2.glTexCoord2f(0,0);
+		gl2.glVertex3f(-1,+1,+1);
+		gl2.glTexCoord2f(1,0);
+		gl2.glVertex3f(+1,+1,+1);
+		gl2.glTexCoord2f(1,1);
+		gl2.glVertex3f(+1,+1,-1);
+		gl2.glTexCoord2f(0,1);
+		gl2.glVertex3f(-1,+1,-1);
+		gl2.glEnd();
+		//  Bottom
+		gl2.glColor3f(1,0,1);
+		gl2.glBegin(GL2.GL_QUADS);
+		gl2.glNormal3f( 0,-1, 0);
+		gl2.glTexCoord2f(0,0);
+		gl2.glVertex3f(-1,-1,-1);
+		gl2.glTexCoord2f(1,0);
+		gl2.glVertex3f(+1,-1,-1);
+		gl2.glTexCoord2f(1,1);
+		gl2.glVertex3f(+1,-1,+1);
+		gl2.glTexCoord2f(0,1);
+		gl2.glVertex3f(-1,-1,+1);
+		gl2.glEnd();
 	}
 
-	private static void reshape(GL3 gl, int width, int height) {
+	private static void reshape(GL2 gl2, int width, int height) {
 		//  Ratio of the width to the height of the window
 		asp = (height > 0) ? (double) width / height : 1;
 		//  Set the viewport to the entire window
-		gl.glViewport(0, 0, width, height);
-		CSCIx239.project(gl.getGL2(), perspProj ? fov : 0.0, asp, dim);
+		gl2.glViewport(0, 0, width, height);
+		CSCIx239.project(gl2, perspProj ? fov : 0.0, asp, dim);
 	}
 
 	/**
 	 * Rendering takes place here.
-	 * @param gl
+	 * @param gl2
 	 * @param width
 	 * @param height
 	 */
-	private static void display(GL3 gl, GLAnimatorControl anim, int width, int height) {
-		GL2 gl2 = gl.getGL2();
+	private static void display(GL2 gl2, GLAnimatorControl anim, int width, int height) {
 		double len = 2.0; // Length of axes
 		// Light position and colors
+		float[] emission = {(float) 0.0, (float) 0.0, (float) 0.0, (float) 1.0};
+		float[] ambient = {(float) 0.3, (float) 0.3, (float) 0.3, (float) 1.0};
+		float[] diffuse = {(float) 1.0, (float) 1.0, (float) 1.0, (float) 1.0};
+		float[] specular = {(float) 1.0, (float) 1.0, (float) 1.0, (float) 1.0};
 		float[] position = {(float) (2 * CSCIx239.Cos(zh)), y_light, (float) (2 * CSCIx239.Sin(zh)), (float) 1.0};
+		float[] shinyness = {16};
 		// Erase the window and the depth buffer
-		gl2.glClear(GL3.GL_COLOR_BUFFER_BIT | GL3.GL_DEPTH_BUFFER_BIT);
+		gl2.glClear(GL2.GL_COLOR_BUFFER_BIT | GL2.GL_DEPTH_BUFFER_BIT);
 		// Enable Z-buffering in OpenGL
-		gl2.glEnable(GL3.GL_DEPTH_TEST);
+		gl2.glEnable(GL2.GL_DEPTH_TEST);
 		// Undo previous transformations
 		gl2.glLoadIdentity();
 		// Perspective - set eye position
@@ -149,47 +174,80 @@ public final class Assignment4 {
 		// Draw light position as sphere (still no lighting here)
 		gl2.glColor3f(1,1,1);
 		gl2.glPushMatrix();
-		gl2.glTranslated(position[0], position[1], position[2]);
-		glt.glutSolidSphere(0.03, 10, 10);
+		gl2.glTranslated(position[0],position[1],position[2]);
+		glt.glutSolidSphere(0.03,10,10);
 		gl2.glPopMatrix();
-		// END OF FIXED PIPELINE
-		float[] ModelViewMatrix = new float[16];
-		float[] ProjectionMatrix = new float[16];
-		gl2.glGetFloatv(GL2.GL_PROJECTION_MATRIX, FloatBuffer.wrap(ProjectionMatrix));
-		gl2.glGetFloatv(GL2.GL_MODELVIEW_MATRIX, FloatBuffer.wrap(ModelViewMatrix));
-		// Use our shader
-		gl2.glUseProgram(shader);
-		// Set Modelview and Projection Matrix
-		int loc = gl.glGetUniformLocation(shader, "ModelViewMatrix");
-		if (loc >= 0) {
-			gl.glUniformMatrix4fv(loc, 1, false, FloatBuffer.wrap(ModelViewMatrix));
+		// OpenGL should normalize normal vectors
+		gl2.glEnable(GL2.GL_NORMALIZE);
+		//  Enable lighting
+		gl2.glEnable(GL2.GL_LIGHTING);
+		//  glColor sets ambient and diffuse color materials
+		gl2.glColorMaterial(GL2.GL_FRONT_AND_BACK, GL2.GL_AMBIENT_AND_DIFFUSE);
+		gl2.glEnable(GL2.GL_COLOR_MATERIAL);
+		//  Enable light 0
+		gl2.glEnable(GL2.GL_LIGHT0);
+		//  Set ambient, diffuse, specular components and position of light 0
+		gl2.glLightfv(GL2.GL_LIGHT0, GL2.GL_AMBIENT, ambient, 0);
+		gl2.glLightfv(GL2.GL_LIGHT0, GL2.GL_DIFFUSE, diffuse, 0);
+		gl2.glLightfv(GL2.GL_LIGHT0, GL2.GL_SPECULAR, specular, 0);
+		gl2.glLightfv(GL2.GL_LIGHT0, GL2.GL_POSITION, position, 0);
+		//  Set materials
+		gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_SHININESS, shinyness, 0);
+		gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_SPECULAR, specular, 0);
+		gl2.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_EMISSION, emission, 0);
+		//
+		//  Draw scene
+		//
+		// Select shader (0 => no shader)
+		gl2.glUseProgram(shader[mode]);
+		// Export time to uniform variable
+		if (mode == 1) {
+			float time = (float) (0.001 * (System.currentTimeMillis() - start));
+			int id;
+			id= gl2.glGetUniformLocation(shader[mode], "mode");
+			if (id >= 0) {
+				gl2.glUniform1i(shader[mode], 3);
+			}
+			id = gl2.glGetUniformLocation(shader[mode], "time");
+			if (id >= 0) {
+				gl2.glUniform1f(id, time);
+			}
+			id = gl2.glGetUniformLocation(shader[mode], "marble");
+			if (id >= 0) {
+				gl2.glUniform1i(id, 0);
+			}
+			id = gl2.glGetUniformLocation(shader[mode], "SimpTex");
+			if (id >= 0) {
+				gl2.glUniform1i(id, 1);
+			}
+			id = gl2.glGetUniformLocation(shader[mode], "PermTex");
+			if (id >= 0) {
+				gl2.glUniform1i(id, 2);
+			}
+			id = gl2.glGetUniformLocation(shader[mode], "GradTex");
+			if (id >= 0) {
+				gl2.glUniform1i(id, 3);
+			}
+			//if (move) {
+				zh = (int) ((90 * time) % 360.0);
+			//}
 		}
-		loc = gl.glGetUniformLocation(shader, "ProjectionMatrix");
-		if (loc >= 0) {
-			gl.glUniformMatrix4fv(loc, 1, false, FloatBuffer.wrap(ProjectionMatrix));
+		// Draw the model, teapot or cube
+		gl2.glColor3f(1,1,0);
+		if (obj == 2) {
+			gl2.glCallList(model);
+		} else if (obj == 1) {
+			glt.glutSolidTeapot(1.0);
+		} else {
+			cube(gl2);
 		}
-		// Select cube buffer
-		gl.glBindBuffer(GL3.GL_ARRAY_BUFFER, cube_buffer.get(0));
-		// Attribute 0: vertex coordinate (vec4) at offset 0
-		gl.glEnableVertexAttribArray(0);
-		gl.glVertexAttribPointer(0, 4, GL3.GL_FLOAT, false, 12 * 4, 0);
-		// Attribute 1:  vertex color (vec3) offset 7 floats
-		gl.glEnableVertexAttribArray(1);
-		gl.glVertexAttribPointer(1, 3, GL3.GL_FLOAT, false, 12 * 4, 7 * 4);
-		// Draw the cube
-		gl.glDrawArrays(GL3.GL_TRIANGLES, 0, 36); // cube size = 36
-		// Disable vertex arrays
-		gl.glDisableVertexAttribArray(0);
-		gl.glDisableVertexAttribArray(1);
-		// Unbind this buffer
-		gl.glBindBuffer(GL3.GL_ARRAY_BUFFER, 0);
-		// Back to fixed pipeline
-		gl.glUseProgram(0);
+		// No shader for what follows
+		gl2.glUseProgram(0);
 		// Draw axes - no lighting from here on
-		gl.glDisable(GL2.GL_LIGHTING);
+		gl2.glDisable(GL2.GL_LIGHTING);
 		gl2.glColor3f(1,1,1);
 		if (axes) {
-			gl2.glBegin(GL3.GL_LINES);
+			gl2.glBegin(GL2.GL_LINES);
 			gl2.glVertex3d(0.0,0.0,0.0);
 			gl2.glVertex3d(len,0.0,0.0);
 			gl2.glVertex3d(0.0,0.0,0.0);
@@ -212,8 +270,8 @@ public final class Assignment4 {
 		gl2.glWindowPos2i(5,5);
 		CSCIx239.print(glt, "Angle=" + th + "," + ph + "  Dim=" + df.format(dim) + " Projection=" + (perspProj ? "Perpective" : "Orthogonal") + " " + text[mode]);
 		// Render the scene and make it visible
-		CSCIx239.errCheck(gl, "display");
-		gl.glFlush();
+		CSCIx239.errCheck(gl2, "display");
+		gl2.glFlush();
 	}
 
 	public static void main(String[] args) {
@@ -224,24 +282,18 @@ public final class Assignment4 {
 		glcanvas.addGLEventListener(new GLEventListener() {
 			@Override
 			public void reshape(GLAutoDrawable glautodrawable, int x, int y, int width, int height) {
-				Assignment4.reshape(glautodrawable.getGL().getGL3(), width, height);
+				Assignment8.reshape(glautodrawable.getGL().getGL2(), width, height);
 			}
 			
 			@Override
 			public void init(GLAutoDrawable glautodrawable) {
 				start = System.currentTimeMillis();
-				gl = glautodrawable.getGL().getGL3();
+				gl = glautodrawable.getGL().getGL2();
 				glc = GLContext.getCurrent();
-				// Debug Info
-				System.out.println("GL_VERSION: " + gl.glGetString(GL2.GL_VERSION));
 				// Load object
-				model = CSCIx239.loadOBJ(gl.getGL3(), new File("tyra.obj"));
+				model = CSCIx239.loadOBJ(gl, new File("tyra.obj"));
 				// Create Shader Programs
-				shader = CSCIx239.createShaderProg(gl.getGL3(), "model.vert", "proctex.frag");
-				// Initialize cube
-				initCube(gl);
-				CSCIx239.errCheck(gl, "init");
-				//gl.setSwapInterval(0); // disable vsync
+				shader[1] = CSCIx239.createShaderProg(gl, "noise.vert", "noise.frag");
 			}
 			
 			@Override
@@ -252,7 +304,7 @@ public final class Assignment4 {
 			@Override
 			public void display(GLAutoDrawable glautodrawable) {
 				// Called when rendering is necessary
-				Assignment4.display(glautodrawable.getGL().getGL3(), glautodrawable.getAnimator(), glautodrawable.getSurfaceWidth(), glautodrawable.getSurfaceHeight());
+				Assignment8.display(glautodrawable.getGL().getGL2(), glautodrawable.getAnimator(), glautodrawable.getSurfaceWidth(), glautodrawable.getSurfaceHeight());
 			}
 		});
 		KeyListener kl = new KeyListener() {
@@ -320,7 +372,7 @@ public final class Assignment4 {
 				}
 				//  Reproject
 				glc.makeCurrent();
-				CSCIx239.project(gl.getGL2(), perspProj ? fov : 0, asp, dim);
+				CSCIx239.project(gl, perspProj ? fov : 0, asp, dim);
 				CSCIx239.errCheck(gl, "proj");
 				glc.release();
 				//  Tell GLUT it is necessary to redisplay the scene
@@ -339,9 +391,8 @@ public final class Assignment4 {
 		};
 		glcanvas.addKeyListener(kl);
 		final Animator animator = new Animator(glcanvas);
-		animator.setRunAsFastAsPossible(true);
-		animator.setUpdateFPSFrames(10, null);
-		final Frame frame = new Frame("OpenGL 3&4 - Jonathan Huang");
+		animator.setUpdateFPSFrames(3, null);
+		final Frame frame = new Frame("Procedural Textures - Jonathan Huang");
 		frame.add(glcanvas);
 		frame.addWindowListener(new WindowAdapter() {
 			@Override
