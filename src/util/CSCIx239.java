@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -69,7 +70,7 @@ public final class CSCIx239 {
 
 	public static int loadTexBMP(GL2 gl2, File file) {
 		// FIXME Not working
-		try {
+		/*try {
 			Texture texture = TextureIO.newTexture(file, false);
 			texture.setTexParameteri(gl2, GL2.GL_TEXTURE_MIN_FILTER, GL2.GL_LINEAR);
 			texture.setTexParameteri(gl2, GL2.GL_TEXTURE_MAG_FILTER, GL2.GL_LINEAR);
@@ -77,7 +78,16 @@ public final class CSCIx239 {
 			return tId;
 		} catch (GLException | IOException e) {
 			throw new RuntimeException(e.getLocalizedMessage(), e);
-		}
+		}*/
+		Buffer image = null;
+		IntBuffer texture = IntBuffer.allocate(1);
+		gl2.glGenTextures(1, texture);
+		gl2.glBindTexture(GL2.GL_TEXTURE_2D, texture.get());
+		gl2.glTexImage2D(GL2.GL_TEXTURE_2D, 0, 3, dx, dy, 0, GL2.GL_RGB, GL2.GL_UNSIGNED_BYTE, image);
+		// Scale linearly when image size doesn't match
+		gl2.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_MAG_FILTER, GL2.GL_LINEAR);
+		gl2.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_MIN_FILTER, GL2.GL_LINEAR);
+		return texture.get(0);
 	}
 
 	public static int loadTexBMP(GL3 gl, File file) {
