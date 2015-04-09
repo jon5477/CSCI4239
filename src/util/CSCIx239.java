@@ -68,17 +68,7 @@ public final class CSCIx239 {
 		}
 	}
 
-	public static int loadTexBMP(GL2 gl2, File file) {
-		// FIXME Not working
-		/*try {
-			Texture texture = TextureIO.newTexture(file, false);
-			texture.setTexParameteri(gl2, GL2.GL_TEXTURE_MIN_FILTER, GL2.GL_LINEAR);
-			texture.setTexParameteri(gl2, GL2.GL_TEXTURE_MAG_FILTER, GL2.GL_LINEAR);
-			int tId = texture.getTextureObject();
-			return tId;
-		} catch (GLException | IOException e) {
-			throw new RuntimeException(e.getLocalizedMessage(), e);
-		}*/
+	/*public static int loadTexBMP(GL2 gl2, File file) {
 		Buffer image = null;
 		IntBuffer texture = IntBuffer.allocate(1);
 		gl2.glGenTextures(1, texture);
@@ -88,7 +78,7 @@ public final class CSCIx239 {
 		gl2.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_MAG_FILTER, GL2.GL_LINEAR);
 		gl2.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_MIN_FILTER, GL2.GL_LINEAR);
 		return texture.get(0);
-	}
+	}*/
 
 	public static int loadTexBMP(GL3 gl, File file) {
 		// FIXME Not working
@@ -171,7 +161,7 @@ public final class CSCIx239 {
 				} else if (line.charAt(0) == 'N' && line.charAt(1) == 's') {
 					mat.Ns = readFloat(line.substring(2), 1);
 				} else if (line.startsWith("map_Kd")) {
-					mat.map = loadTexBMP(gl2, new File(line.substring(7)));
+					//mat.map = loadTexBMP(gl2, new File(line.substring(7)));
 				}
 				// Ignore line if we get here
 			}

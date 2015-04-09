@@ -1,3 +1,3 @@
 #!/bin/sh
 export CLASSPATH=".:hw8.jar:jogl-linux/*"
-java hw.Assignment8
+java hw.Assignment10
