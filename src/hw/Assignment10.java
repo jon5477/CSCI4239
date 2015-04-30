@@ -44,6 +44,7 @@ public final class Assignment10 {
 		int globalWorkSize = roundUp(localWorkSize, elementCount); // rounded up to the nearest multiple of the localWorkSize
 
 		// load sources, create and build program
+		
 		CLProgram program = context.createProgram(ClassLoader.getSystemResourceAsStream("md5.cl")).build();
 
 		// A, B are input buffers, C is for the result
