@@ -19,9 +19,9 @@ public class SHA1 {
 		}
 		buffer[len] = (byte) 0x80; // Append bit '1' to message
 		// Now add the length (in bits) of the entire message as 64 bits
-		buffer[60] = (byte) (ml >>> 24 & 0xFF);
-		buffer[61] = (byte) (ml >>> 16 & 0xFF);
-		buffer[62] = (byte) (ml >>> 8 & 0xFF);
+		buffer[60] = (byte) (ml >> 24 & 0xFF);
+		buffer[61] = (byte) (ml >> 16 & 0xFF);
+		buffer[62] = (byte) (ml >> 8 & 0xFF);
 		buffer[63] = (byte) (ml & 0xFF);
 		//System.out.println(ml);
 		//System.out.println(toView(buffer));

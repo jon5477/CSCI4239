@@ -1,0 +1,3 @@
+#!/bin/sh
+export CLASSPATH=".:proj.jar:jogl-linux/*"
+java proj.Project

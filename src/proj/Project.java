@@ -5,7 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.security.NoSuchAlgorithmException;
+import java.nio.IntBuffer;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -18,10 +18,10 @@ import com.jogamp.opencl.CLMemory.Mem;
 import com.jogamp.opencl.CLProgram;
 
 public final class Project {
-	public static void main(String[] args) throws NoSuchAlgorithmException {
+	public static void main(String[] args) {
 		// start
 		args = new String[2];
-		args[0] = "da39a3ee5e6b4b0d3255bfef95601890afd80709";
+		args[0] = "test";
 		args[1] = "sha1";
 		// end debug
 		String hash = null;
@@ -32,7 +32,7 @@ public final class Project {
 			algorithm = args[1];
 		} else {
 			System.out.println("Not enough arguments.");
-			System.out.println("Usage: [hash] [algorithm]");
+			System.out.println("Usage: [string to hash] [algorithm]");
 			return;
 		}
 		File codeFile;
@@ -58,6 +58,10 @@ public final class Project {
 			System.exit(1);
 			return;
 		}
+		if (hash.length() > 55) {
+			System.out.println("Input string must be 55 characters or less.");
+			return;
+		}
 		// Create the OpenCL context
 		CLContext context = CLContext.create();
 		try {
@@ -76,21 +80,21 @@ public final class Project {
 			try (InputStream is = new FileInputStream(codeFile);) {
 				CLProgram program = context.createProgram(is).build();
 				// grab device memory
-				//CLBuffer<ByteBuffer> input = context.createByteBuffer(workGroupSize * 32 * hashSize, Mem.READ_ONLY);
-				//CLBuffer<ByteBuffer> output = context.createByteBuffer(workGroupSize * 32 * hashSize, Mem.WRITE_ONLY);
-				CLBuffer<ByteBuffer> input = context.createByteBuffer(20, Mem.READ_ONLY);
-				CLBuffer<ByteBuffer> output = context.createByteBuffer(20, Mem.WRITE_ONLY);
-				input.getBuffer().put(0, (byte) 7);
+				CLBuffer<ByteBuffer> input = context.createByteBuffer(55, Mem.READ_ONLY);
+				CLBuffer<IntBuffer> output = context.createIntBuffer(5, Mem.WRITE_ONLY);
+				for (int i = 0; i < hash.length(); i++) {
+					input.getBuffer().put(i, (byte) hash.charAt(i));
+				}
 				System.out.println("used device memory: " + (input.getCLSize() + output.getCLSize()));
-				CLKernel kernel = program.createCLKernel("hashSHA1");
-				kernel.putArgs(input, output);
+				CLKernel kernel = program.createCLKernel("hash_SHA1");
+				kernel.putArgs(input).putArg(hash.length()).putArgs(output);
 				queue.putWriteBuffer(input, false).put1DRangeKernel(kernel, 0, 1, 1).putReadBuffer(output, false);
 				//for(int i = 0; i < 10; i++)
 				//	System.out.print(output.getBuffer().get() + ", ");
 				//System.out.println("...; " + output.getBuffer().remaining() + " more");
 				byte[] out = new byte[20];
-				for (int i = 0; i < 20; i++) {
-					out[i] = output.getBuffer().get(i);
+				for (int i = 0; i < 5; i++) {
+					ByteBuffer.wrap(out).putInt(output.getBuffer().get(i));
 				}
 				System.out.println(DatatypeConverter.printHexBinary(out));
 			}
