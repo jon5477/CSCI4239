@@ -1,125 +1,128 @@
 package hw;
 
+import static com.jogamp.opencl.CLMemory.Mem.READ_ONLY;
+import static com.jogamp.opencl.CLMemory.Mem.WRITE_ONLY;
+import static java.lang.Math.min;
+import static java.lang.System.nanoTime;
+import static java.lang.System.out;
+
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 import com.jogamp.opencl.CLBuffer;
 import com.jogamp.opencl.CLCommandQueue;
 import com.jogamp.opencl.CLContext;
 import com.jogamp.opencl.CLDevice;
 import com.jogamp.opencl.CLKernel;
-import com.jogamp.opencl.CLMemory;
 import com.jogamp.opencl.CLProgram;
 
 public final class Assignment10 {
-	public static final void main(String[] args) {
-		// CPU Computation
-		String s = "teststring";
-		MessageDigest md;
-		try {
-			md = MessageDigest.getInstance("MD5");
-		} catch (NoSuchAlgorithmException e) {
-			throw new InternalError(e.getLocalizedMessage(), e);
-		}
-		long ctime = System.nanoTime();
-		byte[] digested = md.digest(s.getBytes());
-		ctime = System.nanoTime() - ctime;
-		System.out.println(byteArrayToHex(digested));
-		System.out.println("computation took: " + (ctime / 1000000) + "ms");
-		// GPU Computation
+	private static final String plaintext = "plaintexttotestsha1hashing";
+
+	public static void main(String[] args) {
+		// Create the OpenCL context
 		CLContext context = CLContext.create();
-		System.out.println(context.toString());
 		try {
-		// select fastest device
-		CLDevice device = context.getMaxFlopsDevice();
-		System.out.println("using " + device);
-
-		// create command queue on device.
-		CLCommandQueue queue = device.createCommandQueue();
-
-		int elementCount = 1444477; // Length of arrays to process
-		int localWorkSize = Math.min(device.getMaxWorkGroupSize(), 256); // Local work size dimensions
-		int globalWorkSize = roundUp(localWorkSize, elementCount); // rounded up to the nearest multiple of the localWorkSize
-
-		// load sources, create and build program
-		
-		CLProgram program = context.createProgram(ClassLoader.getSystemResourceAsStream("md5.cl")).build();
-
-		// A, B are input buffers, C is for the result
-		//CLBuffer<IntBuffer> size_bytes = context.createIntBuffer(1, CLMemory.Mem.READ_ONLY);
-		//CLBuffer<ByteBuffer> password = context.createByteBuffer(60, CLMemory.Mem.READ_ONLY);
-		//CLBuffer<IntBuffer> output_size = context.createIntBuffer(1, CLMemory.Mem.WRITE_ONLY);
-		//CLBuffer<ByteBuffer> output = context.createByteBuffer(16, CLMemory.Mem.WRITE_ONLY);
-		CLBuffer<ByteBuffer> password_t = context.createByteBuffer(64, CLMemory.Mem.READ_ONLY);
-		CLBuffer<ByteBuffer> password_hash_t = context.createByteBuffer(20, CLMemory.Mem.WRITE_ONLY);
-		
-		/*CLBuffer<FloatBuffer> clBufferA = context.createFloatBuffer(globalWorkSize, CLMemory.Mem.READ_ONLY);
-		CLBuffer<FloatBuffer> clBufferB = context.createFloatBuffer(globalWorkSize, CLMemory.Mem.READ_ONLY);
-		CLBuffer<FloatBuffer> clBufferC = context.createFloatBuffer(globalWorkSize, CLMemory.Mem.WRITE_ONLY);*/
-
-		//System.out.println("used device memory: " + (size_bytes.getCLSize() + password.getCLSize() + output_size.getCLSize() + output.getCLSize()) / 1000000 +"MB");
-
-		// fill input buffers with random numbers
-		// (just to have test data; seed is fixed -> results will not change between runs).
-		//fillBuffer(clBufferA.getBuffer(), 12345);
-		//fillBuffer(clBufferB.getBuffer(), 67890);
-		//size_bytes.getBuffer().put(0, s.length());
-		//password.getBuffer().put(s.getBytes());
-		System.out.println("S length: " + s.length());
-		System.out.println("buf length: " + password_t.getBuffer().position() + "/" + password_t.getBuffer().capacity());
-		password_t.getBuffer().putInt(s.length());
-		System.out.println("buf length: " + password_t.getBuffer().position() + "/" + password_t.getBuffer().capacity());
-		password_t.getBuffer().put(s.getBytes(), 4, 4);
-
-		// get a reference to the kernel function with the name 'VectorAdd'
-		// and map the buffers to its input parameters.
-		CLKernel kernel = program.createCLKernel("do_md5s");
-		System.out.println("Num args: " + kernel.numArgs);
-		kernel.putArgs(password_t, password_hash_t);
-		
-
-		// asynchronous write of data to GPU device,
-		// followed by blocking read to get the computed results back.
-		long time = System.nanoTime();
-		queue.putWriteBuffer(password_t, false)
-		.put1DRangeKernel(kernel, 0, globalWorkSize, localWorkSize)
-		.putReadBuffer(password_hash_t, true);
-		time = System.nanoTime() - time;
-
-		// print first few elements of the resulting buffer to the console.
-		System.out.println(s + " md5 hash: ");
-		int outlength = password_hash_t.getBuffer().getInt(0);
-		System.out.println(outlength);
-		byte[] output = new byte[outlength];
-		password_hash_t.getBuffer().position(4);
-		password_hash_t.getBuffer().get(output, 4, output.length);
-		System.out.println(byteArrayToHex(output));
-
-		System.out.println("computation took: "+(time/1000000)+"ms");
+			// select fastest device
+			CLDevice device = context.getMaxFlopsDevice();
+			System.out.println("using " + device);
+			// create command queue on device
+			CLCommandQueue queue = device.createCommandQueue();
+			int elementCount = 5000; // Amount of hashes to process
+			int localWorkSize = min(device.getMaxWorkGroupSize(), 256); // Local work size dimensions
+			int globalWorkSize = roundUp(localWorkSize, elementCount); // rounded up to the nearest multiple of the localWorkSize
+			System.out.println("device max workgroup size: " + device.getMaxWorkGroupSize());
+			// load the opencl source code
+			try (InputStream is = new FileInputStream(new File("sha1.cl"));) {
+				CLProgram program = context.createProgram(is).build();
+				// grab device memory
+				CLBuffer<ByteBuffer> input = context.createByteBuffer(elementCount * 5, READ_ONLY);
+				CLBuffer<IntBuffer> output = context.createIntBuffer(globalWorkSize * 5, WRITE_ONLY);
+				System.out.println("Global Work Size: " + globalWorkSize);
+				out.println("used device memory: " + (input.getCLSize() + output.getCLSize()) / 1000000 + " MB");
+				// fill input buffers with random numbers
+				// (just to have test data; seed is fixed -> results will not change between runs).
+				fillBuffer(input.getBuffer(), plaintext, plaintext.length());
+				// get a reference to the kernel function
+				// and map the buffers to its input parameters.
+				CLKernel kernel = program.createCLKernel("hash_SHA1");
+				kernel.putArgs(input).putArg(plaintext.length()).putArgs(output).putArg(elementCount);
+				// asynchronous write of data to GPU device,
+				// followed by blocking read to get the computed results back.
+				System.out.println("hashing \"" + plaintext + "\" with " + elementCount + " iterations on GPU");
+				long time = nanoTime();
+				queue.putWriteBuffer(input, false)
+					 .put1DRangeKernel(kernel, 0, globalWorkSize, localWorkSize)
+					 .putReadBuffer(output, true);
+				time = nanoTime() - time;
+				// print first few elements of the resulting buffer to the console.
+				out.println("results snapshot: ");
+				for (int i = 0; i < 5; i++) {
+					out.print(output.getBuffer().get() + ", ");
+				}
+				out.println("...; " + output.getBuffer().remaining() + " more");
+				int[] stuff = new int[5];
+				for (int i = 0; i < stuff.length; i++) {
+					stuff[i] = output.getBuffer().get(i);
+				}
+				System.out.println("hash output: " + Arrays.toString(stuff));
+				System.out.print("hash output (hex): ");
+				System.out.print(Integer.toHexString(stuff[0]));
+				System.out.print(Integer.toHexString(stuff[1]));
+				System.out.print(Integer.toHexString(stuff[2]));
+				System.out.print(Integer.toHexString(stuff[3]));
+				System.out.print(Integer.toHexString(stuff[4]));
+				System.out.println();
+				out.println("computation took: " + (time/1000000) + " ms on the GPU");
+				// free the allocated memory
+				input.release();
+				output.release();
+			}
+			MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
+			System.out.println("hashing \"" + plaintext + "\" with " + elementCount + " iterations on CPU");
+			long time = nanoTime();
+			for (int i = 0; i < elementCount; i++) {
+				sha1.update(plaintext.getBytes());
+				sha1.digest();
+			}
+			time = nanoTime() - time;
+			out.println("computation took: " + (time/1000000) + " ms on the CPU");
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		} finally {
 			context.release();
 		}
 	}
 
+	public static String toHexString(byte[] buf) {
+		StringBuffer sb = new StringBuffer();
+		for (byte b : buf) {
+			sb.append(String.format("%x", b));
+		}
+		return sb.toString();
+	}
+
 	private static int roundUp(int groupSize, int globalSize) {
 		int r = globalSize % groupSize;
 		if (r == 0) {
 			return globalSize;
-		} else {
-			return globalSize + groupSize - r;
 		}
+		return globalSize + groupSize - r;
 	}
 
-	public static String byteArrayToHex(byte[] a) {
-		StringBuilder sb = new StringBuilder(a.length * 2);
-		for (byte b : a) {
-			sb.append(String.format("%02x", b & 0xff));
+	private static void fillBuffer(ByteBuffer buffer, String hash, int size) {
+		for (int i = 0; i < size; i++) {
+			buffer.put(i, (byte) hash.charAt(i));
 		}
-		return sb.toString();
+		buffer.rewind();
 	}
 }

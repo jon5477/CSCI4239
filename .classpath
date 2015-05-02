@@ -3,11 +3,11 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="ujmp-complete-0.2.5.jar"/>
-	<classpathentry kind="lib" path="jogl-windows/gluegen-rt-natives-windows-amd64.jar"/>
-	<classpathentry kind="lib" path="jogl-windows/gluegen-rt.jar"/>
-	<classpathentry kind="lib" path="jogl-windows/jocl-natives-windows-amd64.jar"/>
-	<classpathentry kind="lib" path="jogl-windows/jocl.jar"/>
-	<classpathentry kind="lib" path="jogl-windows/jogl-all-natives-windows-amd64.jar"/>
-	<classpathentry kind="lib" path="jogl-windows/jogl-all.jar"/>
+	<classpathentry kind="lib" path="jogl-macosx/gluegen-rt-natives-macosx-universal.jar"/>
+	<classpathentry kind="lib" path="jogl-macosx/gluegen-rt.jar"/>
+	<classpathentry kind="lib" path="jogl-macosx/jocl-natives-macosx-universal.jar"/>
+	<classpathentry kind="lib" path="jogl-macosx/jocl.jar"/>
+	<classpathentry kind="lib" path="jogl-macosx/jogl-all-natives-macosx-universal.jar"/>
+	<classpathentry kind="lib" path="jogl-macosx/jogl-all.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
