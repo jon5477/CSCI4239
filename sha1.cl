@@ -4,7 +4,7 @@
 #define h3 0x10325476
 #define h4 0xC3D2E1F0
 
-kernel void hash_SHA1(global int* target_hash, global const char* input, int len, global char* matched, int numElements) {
+kernel void hash_SHA1(global int* target_hash, global const char* input, int len, global char* matched, int numElements, int input_offset) {
 	// get index into global data array
 	int iGID = get_global_id(0);
 	// bound check, equivalent to the limit on a 'for' loop
@@ -13,8 +13,9 @@ kernel void hash_SHA1(global int* target_hash, global const char* input, int len
 	}
 	int ml = len * 8;
 	char buffer[64];
+	int offset = (iGID * input_offset);
 	for (int i = 0; i < len; i++) {
-		buffer[i] = input[i];
+		buffer[i] = input[offset + i];
 	}
 	buffer[len] = 0x80; // Append bit '1' to message
 	// Now add the length (in bits) of the entire message as 64 bits
@@ -83,7 +84,5 @@ kernel void hash_SHA1(global int* target_hash, global const char* input, int len
 		output[3] == target_hash[3] &&
 		output[4] == target_hash[4]) {
 		matched[iGID] = 1;
-	} else {
-		matched[iGID] = 0;
 	}
 }

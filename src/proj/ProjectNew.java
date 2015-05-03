@@ -29,7 +29,7 @@ public final class ProjectNew {
 	public static void main(String[] args) {
 		// start
 		args = new String[2];
-		args[0] = "86f7e437faa5a7fce15d1ddcb9eaeaea377667b8";
+		args[0] = "0ab8318acaf6e678dd02e2b5c343ed41111b393d";
 		args[1] = "sha1";
 		// end debug
 		String hashstr = null;
@@ -123,7 +123,7 @@ public final class ProjectNew {
 					// get a reference to the kernel function
 					// and map the buffers to its input parameters.
 					CLKernel kernel = program.createCLKernel("hash_SHA1");
-					kernel.putArgs(hash, input).putArg(e).putArgs(check).putArg(elementCount);
+					kernel.putArgs(hash, input).putArg(e).putArgs(check).putArg(elementCount).putArg(e);
 					// asynchronous write of data to GPU device,
 					// followed by blocking read to get the computed results back.
 					long time = nanoTime();
@@ -138,26 +138,27 @@ public final class ProjectNew {
 						out.print(input.getBuffer().get() + ", ");
 					}
 					out.println("...; " + input.getBuffer().remaining() + " more");*/
-					out.println("results snapshot: ");
+					/*out.println("results snapshot: ");
 					for (int i = 0; i < 90; i++) {
 						out.print(check.getBuffer().get(i) + ", ");
 					}
-					out.println("...; " + check.getBuffer().remaining() + " more");
+					out.println("...; " + check.getBuffer().remaining() + " more");*/
 					int foundIndex = -1;
 					for (int i = 0; i < elementCount; i++) {
 						if (check.getBuffer().get(i) == 1) {
 							// we found the hash
 							foundIndex = i;
-							System.out.println("Found solution!");
+							//System.out.println("Found solution! Index: " + i);
 						}
 					}
 					out.println("computed " + elementCount + " hashes in " + (time / 1000000) + "ms");
 					if (foundIndex != -1) {
 						StringBuilder soln = new StringBuilder();
 						for (int i = 0; i < e; i++) {
-							soln.append(input.getBuffer().getChar(i));
+							byte c = input.getBuffer().get((e * foundIndex) + i);
+							soln.append((char) c);
 						}
-						out.println("found solution for hash, plaintext is: " + soln);
+						out.println("found solution for hash, plaintext is: \"" + soln + "\"");
 					}
 					// free the allocated memory
 					hash.release();
