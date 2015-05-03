@@ -49,7 +49,7 @@ public final class Project {
 				break;
 			}
 			case "sha1": {
-				codeFile = new File("tsha1.cl");
+				codeFile = new File("sha1.cl");
 				hashSize = 20;
 				if (hashstr.length() != 40) {
 					System.out.println("Input hash must be 40 characters.");
@@ -94,20 +94,17 @@ public final class Project {
 				//System.out.println("Global Work Size: " + globalWorkSize);
 				//System.out.println("Allocated: " + globalWorkSize * 5);
 				out.println("used device memory: " + (input.getCLSize() + output.getCLSize()) / 1000000 + "MB");
-				IntBuffer ib = ByteBuffer.wrap(DatatypeConverter.parseHexBinary(hashstr)).asIntBuffer();
+				byte[] b = DatatypeConverter.parseHexBinary(hashstr);
+				ByteBuffer bb = ByteBuffer.wrap(b);
+				IntBuffer ib = bb.asIntBuffer();
 				int[] ints = new int[5];
 				for (int i = 0; i < ints.length; i++) {
 					ints[i] = ib.get(i);
 				}
-				IntBuffer hashBuf = hash.getBuffer();
-				for (int i = 0; i < 5; i++) {
-					hashBuf.put(i, ints[i]);
+				System.out.println(Arrays.toString(ints));
+				if (true) {
+					return;
 				}
-				hashBuf.rewind();
-				for (int i = 0; i < 5; i++) {
-					System.out.print(hashBuf.get(i) + ", ");
-				}
-				hashBuf.rewind();
 				// fill buffer with randomly generated values
 				//fillBuffer(hash.getBuffer(), hashstr, hashstr.length());
 				// get a reference to the kernel function

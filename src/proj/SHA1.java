@@ -9,7 +9,7 @@ public class SHA1 {
 
 	public static final void main(String[] args) {
 		// Data input
-		byte[] input = "8A28F1A8B8938A2C1F3572B04C48D5DF52281EE211AD73F77F9704E".getBytes();
+		byte[] input = "a".getBytes();
 		int len = input.length;
 		// SHA-1 Logic
 		int ml = len * 8;

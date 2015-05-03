@@ -4,13 +4,14 @@
 #define h3 0x10325476
 #define h4 0xC3D2E1F0
 
-kernel void hash_SHA1(global int* target_hash, global const char* input, int len, global char* matched, int numElements) {
+kernel void hash_SHA1(global int* target_hash, global const char* input, int len, global int* output, global char* matched, int numElements) {
 	// get index into global data array
 	int iGID = get_global_id(0);
 	// bound check, equivalent to the limit on a 'for' loop
 	if (iGID >= numElements) {
 		return;
 	}
+	int offset = (iGID * 5);
 	int ml = len * 8;
 	char buffer[64];
 	for (int i = 0; i < len; i++) {
@@ -35,18 +36,17 @@ kernel void hash_SHA1(global int* target_hash, global const char* input, int len
 		w[i] = rotate((w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]), 1);
 	}
 	// Initialize output
-	int output[5];
-	output[0] = h0;
-	output[1] = h1;
-	output[2] = h2;
-	output[3] = h3;
-	output[4] = h4;
+	output[offset] = h0;
+	output[offset + 1] = h1;
+	output[offset + 2] = h2;
+	output[offset + 3] = h3;
+	output[offset + 4] = h4;
 	// Initialize hash value for this chunk:
-	int a = output[0];
-	int b = output[1];
-	int c = output[2];
-	int d = output[3];
-	int e = output[4];
+	int a = output[offset];
+	int b = output[offset + 1];
+	int c = output[offset + 2];
+	int d = output[offset + 3];
+	int e = output[offset + 4];
 	// Main loop:
 	for (int i = 0; i < 80; i++) {
 		int f;
@@ -72,16 +72,16 @@ kernel void hash_SHA1(global int* target_hash, global const char* input, int len
 		a = temp;
 	}
 	// Add this chunk's hash to result so far:
-	output[0] = output[0] + a;
-	output[1] = output[1] + b;
-	output[2] = output[2] + c;
-	output[3] = output[3] + d;
-	output[4] = output[4] + e;
-	if (output[0] == target_hash[0] &&
-		output[1] == target_hash[1] &&
-		output[2] == target_hash[2] &&
-		output[3] == target_hash[3] &&
-		output[4] == target_hash[4]) {
+	output[offset] = output[offset] + a;
+	output[offset + 1] = output[offset + 1] + b;
+	output[offset + 2] = output[offset + 2] + c;
+	output[offset + 3] = output[offset + 3] + d;
+	output[offset + 4] = output[offset + 4] + e;
+	if (output[offset] == target_hash[0] &&
+		output[offset + 1] == target_hash[1] &&
+		output[offset + 2] == target_hash[2] &&
+		output[offset + 3] == target_hash[3] &&
+		output[offset + 4] == target_hash[4]) {
 		matched[iGID] = 1;
 	} else {
 		matched[iGID] = 0;
