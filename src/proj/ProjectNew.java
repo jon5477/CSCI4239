@@ -24,12 +24,12 @@ import com.jogamp.opencl.CLKernel;
 import com.jogamp.opencl.CLProgram;
 
 public final class ProjectNew {
-	private static final int MAX_CHARACTERS = 1; // 5 for now (95 possible input characters)
+	private static final int MAX_CHARACTERS = 2; // 5 for now (95 possible input characters)
 
 	public static void main(String[] args) {
 		// start
 		args = new String[2];
-		args[0] = "0ab8318acaf6e678dd02e2b5c343ed41111b393d";
+		args[0] = "86f7e437faa5a7fce15d1ddcb9eaeaea377667b8";
 		args[1] = "sha1";
 		// end debug
 		String hashstr = null;
@@ -81,7 +81,7 @@ public final class ProjectNew {
 			// md5 size = 128 bits (16 bytes)
 			// sha1 size = 160 bits (20 bytes)
 			// bcrypt size = 184 bits (23 bytes)
-			for (int e = 1; e <= MAX_CHARACTERS; e++) { // Limit since O(95^x) is huge on running time
+			for (int e = 1; e < MAX_CHARACTERS; e++) { // Limit since O(95^x) is huge on running time
 				int elementCount = (int) Math.pow(95, e); // Amount of hashes to process
 				int localWorkSize = min(device.getMaxWorkGroupSize(), 256); // Local work size dimensions
 				int globalWorkSize = roundUp(localWorkSize, elementCount); // rounded up to the nearest multiple of the localWorkSize
@@ -110,7 +110,7 @@ public final class ProjectNew {
 					System.out.println("hash (int form): " + Arrays.toString(ints));
 					System.out.println("Count: " + elementCount * e);
 					CLBuffer<ByteBuffer> input = context.createByteBuffer(elementCount * e, READ_ONLY); // each input string is length e
-					out.println("generating random input strings of length " + e + " (this might be slow!)");
+					out.println("generating random input strings of length " + e + " (this might be slow! exponential time!)");
 					generateRandomInputs(input.getBuffer(), e);
 					out.println("random string generation completed.");
 					CLBuffer<ByteBuffer> check = context.createByteBuffer(elementCount, WRITE_ONLY); // flags to determine if the hash matched or not
@@ -164,6 +164,10 @@ public final class ProjectNew {
 					hash.release();
 					input.release();
 					check.release();
+					if (foundIndex != -1) {
+						// solution was found, exit the program
+						return;
+					}
 				}
 			}
 		} catch (IOException e) {
@@ -173,15 +177,29 @@ public final class ProjectNew {
 		}
 	}
 
-	private static void generateRandomInputs(ByteBuffer buffer, int e) {
-		if (e != 1) {
-			throw new Error(); // TODO for now
+	private static void generateRandomInputs(ByteBuffer buffer, int n) {
+		if (n == 0) {
+			return;
 		}
 		for (byte b = 32; b < 127; b++) {
-			buffer.put(b);
+			rec(buffer, n - 1, new char[0], (char) b);
 		}
 		buffer.rewind();
-		// TODO Generate random input strings
+	}
+
+	private static final void rec(ByteBuffer buffer, int n, char[] p, char np) {
+		char[] newPrefix = new char[p.length + 1];
+		System.arraycopy(p, 0, newPrefix, 0, p.length);
+		newPrefix[p.length] = np;
+		if (n == 0) {
+			for (int i = 0; i < newPrefix.length; i++) {
+				buffer.put((byte) newPrefix[i]);
+			}
+			return;
+		}
+		for (byte b = 32; b < 127; b++) {
+			rec(buffer, n - 1, newPrefix, (char) b);
+		}
 	}
 
 	private static int roundUp(int groupSize, int globalSize) {
